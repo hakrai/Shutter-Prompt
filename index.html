@@ -3722,7 +3722,8 @@ Output valid JSON only.
             try {
                 await navigator.serviceWorker.register('./sw.js', { scope: './' });
             } catch (e) {
-                // silent
+                // Keep it quiet in UI, but log for debugging.
+                console.warn('Service Worker registration failed:', e);
             }
         }
 
