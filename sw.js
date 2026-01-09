@@ -1,10 +1,11 @@
 /* ShutterPrompt Service Worker - basic offline cache */
-const CACHE_NAME = 'shutterprompt-cache-v1';
+const CACHE_NAME = 'shutterprompt-cache-v2';
 
 const ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
+  './manifest.json',
   './icons/icon.svg',
   './icons/icon-192.svg',
   './icons/icon-512.svg',
@@ -47,10 +48,13 @@ self.addEventListener('fetch', (event) => {
       fetch(req)
         .then((res) => {
           const copy = res.clone();
-          caches.open(CACHE_NAME).then((c) => c.put('./index.html', copy));
+          caches.open(CACHE_NAME).then((c) => {
+            // Cache index under multiple keys to cover querystring start_url
+            c.put('./index.html', copy);
+          });
           return res;
         })
-        .catch(() => caches.match('./index.html'))
+        .catch(() => caches.match('./index.html') || caches.match('./'))
     );
     return;
   }

@@ -6,7 +6,9 @@
     <title>ShutterPrompt - AI Prompt Generator</title>
 
     <!-- PWA -->
-    <link rel="manifest" href="manifest.webmanifest">
+    <!-- Use manifest.json for better MIME-type compatibility on various static hosts.
+         Keep manifest.webmanifest for legacy/alternate setups. -->
+    <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#e60023" id="meta-theme-color">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -446,6 +448,12 @@
                     <button onclick="showSection('stats')" id="nav-stats" class="nav-btn text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-md text-sm font-medium transition" data-i18n="nav_stats">
                         <i class="fa-solid fa-chart-bar mr-1"></i> Statistik
                     </button>
+
+                    <!-- Install PWA (only shown when install prompt is available) -->
+                    <button type="button" id="install-btn" class="hidden items-center gap-2 text-white px-3 py-2 rounded-lg text-sm font-bold shadow hover:opacity-95 transition" style="background: linear-gradient(to right, var(--brand-500), var(--brand-grad-to));" onclick="installPWA()" data-i18n="btn_install">
+                        <i class="fa-solid fa-download"></i> Install
+                    </button>
+
                     <button onclick="toggleDarkMode()" class="text-gray-600 hover:text-emerald-600 px-2 py-2 rounded-md transition" title="Mode Gelap">
                         <i id="dark-mode-icon" class="fa-solid fa-moon"></i>
                     </button>
@@ -454,6 +462,10 @@
                     </button>
                 </div>
                 <div class="flex items-center md:hidden gap-2">
+                    <!-- Install PWA (mobile) -->
+                    <button type="button" id="install-btn-mobile" onclick="installPWA()" class="hidden text-gray-600 hover:text-gray-900 p-2" title="Install">
+                        <i class="fa-solid fa-download"></i>
+                    </button>
                     <button onclick="toggleDarkMode()" class="text-gray-600 hover:text-gray-900 p-2">
                         <i id="dark-mode-icon-mobile" class="fa-solid fa-moon"></i>
                     </button>
@@ -1231,6 +1243,8 @@
                 toast_error: "Terjadi kesalahan",
                 chars: "karakter",
 
+                btn_install: "Install",
+
                 lock_title: "Kunci Aplikasi",
                 lock_subtitle: "Aktifkan pola untuk mengunci aplikasi",
                 lock_set_pattern: "Atur Pola",
@@ -1363,6 +1377,8 @@
                 toast_error: "An error occurred",
                 chars: "chars",
 
+                btn_install: "Install",
+
                 lock_title: "App Lock",
                 lock_subtitle: "Enable a pattern lock for the app",
                 lock_set_pattern: "Set Pattern",
@@ -1494,6 +1510,8 @@
                 toast_settings_saved: "تم حفظ الإعدادات!",
                 toast_error: "حدث خطأ",
                 chars: "حرف",
+
+                btn_install: "تثبيت",
 
                 lock_title: "قفل التطبيق",
                 lock_subtitle: "فعّل قفل النمط للتطبيق",
@@ -3717,11 +3735,80 @@ Output valid JSON only.
             meta.setAttribute('content', `rgb(${rgb.replace(/\s+/g, ', ')})`);
         }
 
+        // Install prompt handling
+        let deferredInstallPrompt = null;
+
+        function isIos() {
+            return /iphone|ipad|ipod/i.test(navigator.userAgent);
+        }
+        function isInStandaloneMode() {
+            return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || (window.navigator.standalone === true);
+        }
+
+        function setInstallButtonsVisible(visible) {
+            const btn = document.getElementById('install-btn');
+            const btnMobile = document.getElementById('install-btn-mobile');
+            if (btn) btn.classList.toggle('hidden', !visible);
+            if (btnMobile) btnMobile.classList.toggle('hidden', !visible);
+        }
+
+        async function installPWA() {
+            // iOS does not support beforeinstallprompt.
+            if (isIos() && !isInStandaloneMode()) {
+                showToast('iOS: gunakan Share → Add to Home Screen', 'info');
+                return;
+            }
+
+            if (!deferredInstallPrompt) {
+                showToast('Install tidak tersedia di browser ini', 'info');
+                return;
+            }
+
+            try {
+                deferredInstallPrompt.prompt();
+                const { outcome } = await deferredInstallPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    showToast('Installing...', 'success');
+                }
+            } catch (_) {
+                // ignore
+            } finally {
+                deferredInstallPrompt = null;
+                setInstallButtonsVisible(false);
+            }
+        }
+
         // Register PWA SW on load
         document.addEventListener('DOMContentLoaded', () => {
             registerServiceWorker();
             syncMetaThemeColor();
+
+            // If already installed, hide install UI.
+            if (isInStandaloneMode()) {
+                setInstallButtonsVisible(false);
+            } else {
+                // For iOS, we can show install hint button (optional). We'll keep hidden until user needs it.
+                setInstallButtonsVisible(false);
+            }
         });
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Prevent the mini-infobar from appearing on mobile
+            e.preventDefault();
+            deferredInstallPrompt = e;
+            setInstallButtonsVisible(true);
+        });
+
+        window.addEventListener('appinstalled', () => {
+            deferredInstallPrompt = null;
+            setInstallButtonsVisible(false);
+            showToast('App installed', 'success');
+        });
+
+        // Installability note: service workers require a secure context (https or localhost)
+        if (!window.isSecureContext) {
+            console.warn('PWA install requires HTTPS or localhost (secure context).');
+        }
 
         // Patch theme applier so meta theme-color follows
         const _origApplyThemePreset = applyThemePreset;
