@@ -1,0 +1,3739 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShutterPrompt - AI Prompt Generator</title>
+
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#e60023" id="meta-theme-color">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="icons/icon-192.svg">
+
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Select2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <!-- jQuery (required for Select2) -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <!-- Select2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+        * { -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            overscroll-behavior-x: contain;
+        }
+
+        /* Theme (Primary Color Presets) */
+        :root {
+            /* default theme: Shutterstock red */
+            --brand-rgb: 230 0 35;
+            --brand-500: rgb(var(--brand-rgb));
+            --brand-600: #cc0020;
+            --brand-700: #a8001a;
+            --brand-200: #ffb3c1;
+            --brand-100: #ffe5ea;
+            --brand-grad-to: #ff6a00;
+        }
+
+        /* Map existing Tailwind emerald/teal utilities to theme variables */
+        .text-emerald-600 { color: var(--brand-600) !important; }
+        .text-emerald-500 { color: var(--brand-500) !important; }
+        .bg-emerald-500 { background-color: var(--brand-500) !important; }
+        .hover\:bg-emerald-600:hover { background-color: var(--brand-600) !important; }
+        .hover\:bg-emerald-500:hover { background-color: var(--brand-500) !important; }
+        .border-emerald-200 { border-color: var(--brand-200) !important; }
+        .hover\:border-emerald-200:hover { border-color: var(--brand-200) !important; }
+        .hover\:border-emerald-300:hover { border-color: color-mix(in srgb, var(--brand-500) 35%, white) !important; }
+        .focus\:border-emerald-500:focus { border-color: var(--brand-500) !important; }
+        .focus\:ring-emerald-500:focus { --tw-ring-color: var(--brand-500) !important; }
+        /* Make sure the CTA focus ring follows theme and stays visible */
+        #generate-btn:focus { --tw-ring-color: var(--brand-500) !important; }
+
+        /* Tailwind gradient helpers (browser build uses CSS vars)
+           NOTE: Tailwind Browser injects utilities after our <style>. Use !important on CSS variables
+           so theme always wins (e.g., Generate button gradient follows selected preset). */
+        .from-emerald-500 {
+            --tw-gradient-from: var(--brand-500) var(--tw-gradient-from-position) !important;
+            --tw-gradient-to: rgb(0 0 0 / 0) var(--tw-gradient-from-position) !important;
+            --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+        }
+        .hover\:from-emerald-600:hover {
+            --tw-gradient-from: var(--brand-600) var(--tw-gradient-from-position) !important;
+            --tw-gradient-to: rgb(0 0 0 / 0) var(--tw-gradient-from-position) !important;
+            --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+        }
+        .to-teal-500 { --tw-gradient-to: var(--brand-grad-to) var(--tw-gradient-to-position) !important; }
+        .hover\:to-teal-600:hover { --tw-gradient-to: color-mix(in srgb, var(--brand-grad-to) 85%, black) var(--tw-gradient-to-position) !important; }
+
+        /* Primary CTA button: force a visible theme gradient (fixes white/blank button in light mode) */
+        #generate-btn {
+            background-color: var(--brand-500) !important;
+            background-image: linear-gradient(to right, var(--brand-500), var(--brand-grad-to)) !important;
+        }
+        #generate-btn:hover {
+            background-color: var(--brand-600) !important;
+            background-image: linear-gradient(to right, var(--brand-600), color-mix(in srgb, var(--brand-grad-to) 85%, black)) !important;
+        }
+
+        /* Dark Mode Styles */
+        .dark body, body.dark {
+            background-color: #111827;
+            color: #f3f4f6;
+        }
+        .dark .bg-white { background-color: #1f2937 !important; }
+        .dark .bg-gray-50 { background-color: #374151 !important; }
+        .dark .bg-gray-100 { background-color: #4b5563 !important; }
+        .dark .text-gray-800 { color: #f3f4f6 !important; }
+        .dark .text-gray-700 { color: #e5e7eb !important; }
+        .dark .text-gray-600 { color: #d1d5db !important; }
+        .dark .text-gray-500 { color: #9ca3af !important; }
+        .dark .text-gray-400 { color: #9ca3af !important; }
+        .dark .border-gray-100 { border-color: #374151 !important; }
+        .dark .border-gray-200 { border-color: #4b5563 !important; }
+        .dark .border-gray-300 { border-color: #4b5563 !important; }
+        .dark .shadow-md { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3) !important; }
+        .dark .shadow-xl { box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4) !important; }
+        .dark input, .dark select, .dark textarea {
+            background-color: #374151 !important;
+            border-color: #4b5563 !important;
+            color: #f3f4f6 !important;
+        }
+        .dark .hover\:bg-gray-50:hover { background-color: #374151 !important; }
+        .dark .hover\:bg-gray-200:hover { background-color: #4b5563 !important; }
+
+        /* Select2 Custom Styling */
+        .select2-container { width: 100% !important; }
+        .select2-container--default .select2-selection--single {
+            height: 44px !important;
+            padding: 8px 12px !important;
+            border: 1px solid #d1d5db !important;
+            border-radius: 0.5rem !important;
+            background-color: #f9fafb !important;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: 26px !important;
+            padding-left: 0 !important;
+            color: #374151 !important;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 42px !important;
+        }
+        .select2-dropdown {
+            border-radius: 0.5rem !important;
+            border: 1px solid #d1d5db !important;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+            z-index: 99999 !important;
+        }
+        .select2-container--default .select2-results__option--highlighted[aria-selected] {
+            background-color: var(--brand-500) !important;
+        }
+        .select2-container--default .select2-search--dropdown .select2-search__field {
+            border-radius: 0.375rem !important;
+            padding: 8px !important;
+        }
+        .dark .select2-container--default .select2-selection--single {
+            background-color: #374151 !important;
+            border-color: #4b5563 !important;
+        }
+        .dark .select2-container--default .select2-selection--single .select2-selection__rendered {
+            color: #f3f4f6 !important;
+        }
+        .dark .select2-dropdown {
+            background-color: #1f2937 !important;
+            border-color: #4b5563 !important;
+        }
+        .dark .select2-container--default .select2-search--dropdown .select2-search__field {
+            background-color: #374151 !important;
+            border-color: #4b5563 !important;
+            color: #f3f4f6 !important;
+        }
+        .dark .select2-results__option {
+            color: #f3f4f6 !important;
+        }
+        .dark .select2-container--default .select2-results__option[aria-selected=true] {
+            background-color: #374151 !important;
+        }
+
+        .gradient-text {
+            background: linear-gradient(to right, var(--brand-500), var(--brand-grad-to));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Loading Spinner */
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 3px solid var(--brand-500);
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Fade Animation */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in-up { animation: fadeInUp 0.4s ease-out; }
+
+        /* Section animation helpers */
+        .section-content { will-change: transform, opacity; }
+
+        /* Slide animations for swipe */
+        @keyframes slideInLeft {
+            from { opacity: 0; transform: translateX(-30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes slideOutLeft {
+            from { opacity: 1; transform: translateX(0); }
+            to { opacity: 0; transform: translateX(-30px); }
+        }
+        @keyframes slideOutRight {
+            from { opacity: 1; transform: translateX(0); }
+            to { opacity: 0; transform: translateX(30px); }
+        }
+        .slide-in-left { animation: slideInLeft 0.28s ease-out both; }
+        .slide-in-right { animation: slideInRight 0.28s ease-out both; }
+        .slide-out-left { animation: slideOutLeft 0.22s ease-in both; }
+        .slide-out-right { animation: slideOutRight 0.22s ease-in both; }
+
+        @media (prefers-reduced-motion: reduce) {
+            .slide-in-left, .slide-in-right, .slide-out-left, .slide-out-right, .animate-fade-in-up {
+                animation: none !important;
+            }
+        }
+
+        /* Bottom Nav Safe Area */
+        .pb-safe { padding-bottom: 5.5rem; }
+
+        /* Stats Card Gradient */
+        .stat-card-1 { background: linear-gradient(135deg, var(--brand-500) 0%, var(--brand-grad-to) 100%); }
+        .stat-card-2 { background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); }
+        .stat-card-3 { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
+        .stat-card-4 { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .dark ::-webkit-scrollbar-track { background: #1f2937; }
+        .dark ::-webkit-scrollbar-thumb { background: #4b5563; }
+
+        /* Mobile Bottom Navigation */
+        .mobile-nav-btn {
+            min-width: 56px;
+            min-height: 56px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 10;
+            touch-action: manipulation;
+        }
+        .mobile-nav-btn::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            z-index: -1;
+            pointer-events: none;
+        }
+        nav.safe-area-bottom { touch-action: manipulation; }
+        .mobile-nav-btn.active { color: var(--brand-600); }
+        .mobile-nav-btn.active::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 32px;
+            height: 3px;
+            background: linear-gradient(to right, var(--brand-500), var(--brand-700));
+            border-radius: 0 0 4px 4px;
+        }
+
+        /* Mobile footer nav: keep neutral top border (no theme accent line). Active state still uses theme colors. */
+        #mobile-bottom-nav { border-top-color: #e5e7eb !important; }
+        .dark #mobile-bottom-nav { border-top-color: #4b5563 !important; }
+        #mobile-bottom-nav::before { content: none !important; }
+        .mobile-nav-btn:active { transform: scale(0.98); }
+
+        /* Swipe drag preview */
+        .section-dragging { transition: transform 0.05s linear; }
+
+        /* Swipe indicator */
+        .swipe-indicator {
+            position: fixed;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 60px;
+            background: color-mix(in srgb, var(--brand-500) 35%, transparent);
+            border-radius: 4px;
+            opacity: 0;
+            transition: opacity 0.2s;
+            pointer-events: none;
+            z-index: 100;
+        }
+        .swipe-indicator.left { left: 4px; }
+        .swipe-indicator.right { right: 4px; }
+        .swipe-indicator.show { opacity: 1; }
+
+        /* Template & Card touch improvements */
+        .touch-card {
+            -webkit-user-select: none;
+            user-select: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .touch-card:active {
+            transform: scale(0.985);
+            opacity: 0.95;
+        }
+
+        /* App Lock Overlay */
+        body.locked { overflow: hidden; }
+        .pattern-area {
+            position: relative;
+            width: min(300px, 80vw);
+            height: min(300px, 80vw);
+            margin: 0 auto;
+            touch-action: none;
+        }
+        .pattern-svg {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        .pattern-grid {
+            position: absolute;
+            inset: 0;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 18px;
+            padding: 18px;
+        }
+        .pattern-node {
+            width: 100%;
+            height: 100%;
+            border-radius: 9999px;
+            background: color-mix(in srgb, var(--brand-500) 10%, transparent);
+            border: 2px solid color-mix(in srgb, var(--brand-500) 25%, transparent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+        }
+        .pattern-node::after {
+            content: '';
+            width: 14px;
+            height: 14px;
+            border-radius: 9999px;
+            background: color-mix(in srgb, var(--brand-500) 25%, transparent);
+            transition: transform 0.12s ease, background 0.12s ease;
+        }
+        .pattern-node.selected {
+            border-color: color-mix(in srgb, var(--brand-500) 80%, transparent);
+            background: color-mix(in srgb, var(--brand-500) 12%, transparent);
+        }
+        .pattern-node.selected::after {
+            transform: scale(1.4);
+            background: color-mix(in srgb, var(--brand-500) 90%, transparent);
+        }
+        .dark #lock-overlay .bg-white { background-color: #1f2937 !important; }
+        .dark #lock-overlay .text-gray-900 { color: #f3f4f6 !important; }
+        .dark #lock-overlay .text-gray-500 { color: #9ca3af !important; }
+
+        /* Custom toggle visuals (lock switch) */
+        .toggle-track.on { background-color: var(--brand-500) !important; }
+        .toggle-dot.on { transform: translateX(20px); }
+
+        /* Image Editor */
+        .editor-canvas {
+            width: 100%;
+            height: auto;
+            background: #f3f4f6;
+            border-radius: 0.75rem;
+        }
+        .dark .editor-canvas { background: #111827; }
+        .segmented {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+        }
+        .seg-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 12px;
+            border-radius: 0.75rem;
+            font-weight: 700;
+            font-size: 0.85rem;
+            background: #f3f4f6;
+            color: #374151;
+            border: 1px solid #e5e7eb;
+            transition: all 0.15s ease;
+            min-height: 44px;
+        }
+        .seg-btn.active {
+            background: color-mix(in srgb, var(--brand-100) 55%, white);
+            border-color: var(--brand-200);
+            color: var(--brand-700);
+        }
+        .dark .seg-btn { background: #374151; border-color: #4b5563; color: #e5e7eb; }
+        .dark .seg-btn.active {
+            background: color-mix(in srgb, var(--brand-500) 18%, transparent);
+            border-color: color-mix(in srgb, var(--brand-500) 35%, transparent);
+            color: color-mix(in srgb, var(--brand-500) 75%, white);
+        }
+    </style>
+</head>
+<body class="text-gray-800 min-h-screen flex flex-col bg-gray-100">
+
+    <!-- Swipe Indicators -->
+    <div class="swipe-indicator left md:hidden"></div>
+    <div class="swipe-indicator right md:hidden"></div>
+
+    <!-- Top Navigation -->
+    <nav class="bg-white shadow-md sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-14">
+                <div class="flex items-center">
+                    <i class="fa-solid fa-camera-retro text-emerald-600 text-xl mr-2"></i>
+                    <span class="font-bold text-lg tracking-tight">Shutter<span class="text-emerald-600">Prompt</span></span>
+                </div>
+                <div class="hidden md:flex items-center space-x-2">
+                    <button onclick="showSection('generator')" id="nav-generator" class="nav-btn text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-md text-sm font-medium transition" data-i18n="nav_generator">
+                        <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Generator
+                    </button>
+                    <button onclick="showSection('templates')" id="nav-templates" class="nav-btn text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-md text-sm font-medium transition" data-i18n="nav_templates">
+                        <i class="fa-solid fa-layer-group mr-1"></i> Template
+                    </button>
+                    <button onclick="showSection('library')" id="nav-library" class="nav-btn text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-md text-sm font-medium transition" data-i18n="nav_library">
+                        <i class="fa-solid fa-bookmark mr-1"></i> Library
+                    </button>
+                    <button onclick="showSection('editor')" id="nav-editor" class="nav-btn text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-md text-sm font-medium transition" data-i18n="nav_editor">
+                        <i class="fa-solid fa-image mr-1"></i> Editor
+                    </button>
+                    <button onclick="showSection('stats')" id="nav-stats" class="nav-btn text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-md text-sm font-medium transition" data-i18n="nav_stats">
+                        <i class="fa-solid fa-chart-bar mr-1"></i> Statistik
+                    </button>
+                    <button onclick="toggleDarkMode()" class="text-gray-600 hover:text-emerald-600 px-2 py-2 rounded-md transition" title="Mode Gelap">
+                        <i id="dark-mode-icon" class="fa-solid fa-moon"></i>
+                    </button>
+                    <button onclick="openSettings()" class="text-gray-600 hover:text-emerald-600 px-2 py-2 rounded-md transition" title="Pengaturan">
+                        <i class="fa-solid fa-gear"></i>
+                    </button>
+                </div>
+                <div class="flex items-center md:hidden gap-2">
+                    <button onclick="toggleDarkMode()" class="text-gray-600 hover:text-gray-900 p-2">
+                        <i id="dark-mode-icon-mobile" class="fa-solid fa-moon"></i>
+                    </button>
+                    <button onclick="openSettings()" class="text-gray-600 hover:text-gray-900 p-2">
+                        <i class="fa-solid fa-gear"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main id="main-content" class="flex-grow container mx-auto px-4 py-6 max-w-4xl pb-safe">
+
+        <!-- API Key Warning -->
+        <div id="api-warning" class="hidden mb-4 bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded shadow-sm">
+            <div class="flex items-center">
+                <i class="fa-solid fa-exclamation-triangle text-yellow-400 mr-3"></i>
+                <p class="text-sm text-yellow-700" data-i18n="api_warning">
+                    API Key belum dikonfigurasi. <button onclick="openSettings()" class="font-bold underline">Atur sekarang</button>
+                </p>
+            </div>
+        </div>
+
+        <!-- Generator Section -->
+        <div id="generator-section" class="section-content space-y-5">
+            <div class="text-center mb-6">
+                <h1 class="text-2xl md:text-3xl font-extrabold mb-1"><span data-i18n="main_title_1">Buat Karya</span> <span class="gradient-text" data-i18n="main_title_2">Masterpiece</span></h1>
+                <p class="text-gray-500 text-sm" data-i18n="main_subtitle">Generate prompt AI & metadata dalam hitungan detik</p>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+                <div class="p-5 md:p-6 space-y-5">
+
+                    <!-- Category & Aspect Ratio -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2" data-i18n="label_category">Kategori</label>
+                            <div class="flex gap-2">
+                                <select id="category-select" class="flex-1 select2-dropdown">
+                                    <option value="" data-i18n="select_category">Pilih Kategori...</option>
+                                </select>
+                                <button onclick="randomCategory()" class="bg-gray-100 hover:bg-gray-200 text-gray-600 p-3 rounded-lg transition" title="Acak">
+                                    <i class="fa-solid fa-dice"></i>
+                                </button>
+                            </div>
+                            <p class="text-[11px] text-gray-400 mt-1" data-i18n="hint_random_pool">Random mengikuti pengaturan Tren/All</p>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2" data-i18n="label_aspect">Rasio Aspek</label>
+                            <select id="aspect-ratio" class="w-full select2-dropdown">
+                                <option value="--ar 3:2">3:2 (Standar)</option>
+                                <option value="--ar 16:9">16:9 (Sinematik)</option>
+                                <option value="--ar 1:1">1:1 (Kotak)</option>
+                                <option value="--ar 9:16">9:16 (Vertikal)</option>
+                                <option value="--ar 2:3">2:3 (Potret)</option>
+                                <option value="--ar 4:5">4:5 (Instagram)</option>
+                                <option value="--ar 21:9">21:9 (Ultralebar)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Style Preset -->
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2" data-i18n="label_style">Gaya Preset</label>
+                        <select id="style-preset" class="w-full select2-dropdown">
+                            <option value="photorealistic">📷 Fotorealistik</option>
+                            <option value="cinematic">🎬 Sinematik</option>
+                            <option value="editorial">📰 Editorial</option>
+                            <option value="minimalist">◻️ Minimalis</option>
+                            <option value="vibrant">🌈 Cerah & Berwarna</option>
+                            <option value="moody">🌑 Gelap & Dramatis</option>
+                            <option value="vintage">📼 Vintage/Retro</option>
+                            <option value="illustration">🎨 Gaya Ilustrasi</option>
+                            <option value="3d-render">🧊 Render 3D</option>
+                            <option value="aerial">🚁 Udara/Drone</option>
+                            <option value="watercolor">💧 Cat Air</option>
+                            <option value="flat-design">📐 Desain Flat</option>
+                        </select>
+                    </div>
+
+                    <!-- Main Input -->
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2" data-i18n="label_describe">Deskripsikan Visi Anda</label>
+                        <div class="relative">
+                            <textarea id="user-input" rows="3" class="w-full rounded-lg border-gray-300 bg-gray-50 border p-3 pr-24 text-sm focus:border-emerald-500 focus:ring-emerald-500 transition placeholder-gray-400" placeholder="Contoh: Pemandangan gunung yang indah saat matahari terbenam..." data-i18n-placeholder="input_placeholder"></textarea>
+                            <div class="absolute top-2 right-2 flex gap-1">
+                                <button type="button" onclick="magicEnhance()" id="magic-btn" class="p-2 text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition" title="AI Enhance">
+                                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                </button>
+                                <button type="button" onclick="clearInput()" class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition" title="Hapus">
+                                    <i class="fa-solid fa-eraser"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="mt-1 flex justify-between text-xs text-gray-400">
+                            <span data-i18n="input_hint">Deskripsikan atau biarkan AI menyempurnakan</span>
+                            <span id="char-count">0 karakter</span>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex gap-3">
+                        <button type="button" onclick="generateContent()" id="generate-btn" class="flex-grow flex justify-center items-center py-3.5 px-6 rounded-xl shadow-lg text-base font-bold text-white bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition transform hover:scale-[1.01]">
+                            <i class="fa-solid fa-rocket mr-2"></i> <span data-i18n="btn_generate">Generate Aset</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div id="results-area" class="hidden space-y-4 animate-fade-in-up">
+
+                <!-- Quick Actions Bar -->
+                <div class="flex gap-2 justify-end flex-wrap">
+                    <button type="button" onclick="toggleFavorite()" id="fav-btn" class="flex items-center gap-1 px-3 py-2 rounded-lg bg-white border border-gray-200 text-gray-600 hover:bg-pink-50 hover:text-pink-500 hover:border-pink-200 transition text-sm">
+                        <i class="fa-regular fa-heart" id="fav-icon"></i> <span id="fav-text" data-i18n="btn_save">Simpan</span>
+                    </button>
+                    <button type="button" onclick="copyAllMetadata()" class="flex items-center gap-1 px-3 py-2 rounded-lg bg-white border border-gray-200 text-gray-600 hover:bg-green-50 hover:text-green-600 hover:border-green-200 transition text-sm">
+                        <i class="fa-solid fa-copy"></i> <span data-i18n="btn_copy_all">Salin Semua</span>
+                    </button>
+                    <button type="button" onclick="regenerateContent()" class="flex items-center gap-1 px-3 py-2 rounded-lg bg-white border border-gray-200 text-gray-600 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition text-sm">
+                        <i class="fa-solid fa-rotate"></i> <span data-i18n="btn_regenerate">Ulang</span>
+                    </button>
+                </div>
+
+                <!-- AI Prompt Card -->
+                <div class="bg-white rounded-xl shadow-md overflow-hidden border-l-4 border-indigo-500">
+                    <div class="bg-gray-50 px-4 py-2.5 border-b border-gray-100 flex justify-between items-center">
+                        <h3 class="font-bold text-sm text-gray-800"><i class="fa-solid fa-robot text-indigo-500 mr-2"></i><span data-i18n="result_prompt">Prompt AI</span></h3>
+                        <button type="button" onclick="copyToClipboard('result-prompt')" class="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded hover:bg-indigo-200 transition" data-i18n="btn_copy">Salin</button>
+                    </div>
+                    <div class="p-4 bg-gray-50 font-mono text-sm text-gray-700 break-words leading-relaxed" id="result-prompt"></div>
+                </div>
+
+                <!-- Title & Categories -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-white rounded-xl shadow-md overflow-hidden border-l-4 border-green-500">
+                        <div class="bg-gray-50 px-4 py-2.5 border-b border-gray-100 flex justify-between items-center">
+                            <h3 class="font-bold text-sm text-gray-800"><i class="fa-solid fa-heading text-green-500 mr-2"></i><span data-i18n="result_title">Judul</span></h3>
+                            <button type="button" onclick="copyToClipboard('result-title')" class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200 transition" data-i18n="btn_copy">Salin</button>
+                        </div>
+                        <div class="p-4 text-sm text-gray-700" id="result-title"></div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-md overflow-hidden border-l-4 border-yellow-500">
+                        <div class="bg-gray-50 px-4 py-2.5 border-b border-gray-100 flex justify-between items-center">
+                            <h3 class="font-bold text-sm text-gray-800"><i class="fa-solid fa-folder text-yellow-500 mr-2"></i><span data-i18n="result_categories">Kategori</span></h3>
+                            <button type="button" onclick="copyToClipboard('result-categories')" class="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded hover:bg-yellow-200 transition" data-i18n="btn_copy">Salin</button>
+                        </div>
+                        <div class="p-4 text-sm text-gray-700" id="result-categories"></div>
+                    </div>
+                </div>
+
+                <!-- Description -->
+                <div class="bg-white rounded-xl shadow-md overflow-hidden border-l-4 border-blue-500">
+                    <div class="bg-gray-50 px-4 py-2.5 border-b border-gray-100 flex justify-between items-center">
+                        <h3 class="font-bold text-sm text-gray-800"><i class="fa-solid fa-align-left text-blue-500 mr-2"></i><span data-i18n="result_description">Deskripsi</span></h3>
+                        <button type="button" onclick="copyToClipboard('result-description')" class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 transition" data-i18n="btn_copy">Salin</button>
+                    </div>
+                    <div class="p-4 text-sm text-gray-700" id="result-description"></div>
+                </div>
+
+                <!-- Keywords -->
+                <div class="bg-white rounded-xl shadow-md overflow-hidden border-l-4 border-emerald-500">
+                    <div class="bg-gray-50 px-4 py-2.5 border-b border-gray-100 flex justify-between items-center">
+                        <h3 class="font-bold text-sm text-gray-800"><i class="fa-solid fa-tags text-emerald-500 mr-2"></i><span data-i18n="result_keywords">Kata Kunci</span> <span class="font-normal text-gray-400" id="keyword-count">(0)</span></h3>
+                        <button type="button" onclick="copyToClipboard('result-tags')" class="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded hover:bg-emerald-200 transition" data-i18n="btn_copy_all">Salin Semua</button>
+                    </div>
+                    <div class="p-4 bg-gray-50">
+                        <div id="result-tags" class="flex flex-wrap gap-1.5"></div>
+                        <textarea id="result-tags-raw" class="hidden"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Templates Section -->
+        <div id="templates-section" class="section-content hidden space-y-5">
+            <div class="flex justify-between items-center">
+                <h2 class="text-xl font-bold" data-i18n="templates_title">Template Cepat</h2>
+            </div>
+            <p class="text-gray-500 text-sm" data-i18n="templates_subtitle">Klik template untuk mulai generate dengan cepat</p>
+            <div id="templates-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+        </div>
+
+        <!-- Library Section (Favorites + History tabs) -->
+        <div id="library-section" class="section-content hidden space-y-5">
+            <div class="flex flex-col gap-3">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xl font-bold" data-i18n="library_title">Library</h2>
+                    <div class="flex gap-2">
+                        <button type="button" onclick="exportData()" class="px-3 py-2 bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-600 transition min-w-[44px] min-h-[44px] flex items-center justify-center" title="Ekspor Data">
+                            <i class="fa-solid fa-download"></i>
+                        </button>
+                        <button type="button" onclick="triggerImport()" class="px-3 py-2 bg-green-500 text-white rounded-lg text-sm hover:bg-green-600 transition min-w-[44px] min-h-[44px] flex items-center justify-center" title="Impor Data">
+                            <i class="fa-solid fa-upload"></i>
+                        </button>
+                        <input type="file" id="import-file" accept=".json" class="hidden" onchange="importData(event)">
+                    </div>
+                </div>
+
+                <div class="segmented">
+                    <button type="button" class="seg-btn active" id="library-tab-favorites" onclick="switchLibraryTab('favorites')">
+                        <i class="fa-solid fa-heart"></i> <span data-i18n="library_tab_favorites">Favorit</span> <span class="text-gray-400 font-normal" id="fav-count">(0)</span>
+                    </button>
+                    <button type="button" class="seg-btn" id="library-tab-history" onclick="switchLibraryTab('history')">
+                        <i class="fa-solid fa-clock-rotate-left"></i> <span data-i18n="library_tab_history">Riwayat</span> <span class="text-gray-400 font-normal" id="history-count">(0)</span>
+                    </button>
+                    <button type="button" class="seg-btn" id="library-tab-actions" onclick="toggleLibraryActions()">
+                        <i class="fa-solid fa-sliders"></i> <span data-i18n="library_tab_actions">Aksi</span>
+                    </button>
+                </div>
+
+                <div id="library-actions" class="hidden bg-white rounded-xl shadow-md border border-gray-100 p-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <button type="button" onclick="clearAllFavorites()" class="px-3 py-2 rounded-lg bg-pink-50 text-pink-600 text-sm font-semibold hover:bg-pink-100 transition" data-i18n="library_clear_favorites">Hapus Favorit</button>
+                        <button type="button" onclick="clearAllHistory()" class="px-3 py-2 rounded-lg bg-red-50 text-red-600 text-sm font-semibold hover:bg-red-100 transition" data-i18n="library_clear_history">Hapus Riwayat</button>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2" data-i18n="library_actions_hint">Tip: Gunakan pencarian untuk menemukan item dengan cepat.</p>
+                </div>
+
+                <div class="flex gap-2">
+                    <input type="text" id="library-search" class="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:border-emerald-500 focus:ring-emerald-500" oninput="filterLibrary()" data-i18n-placeholder="library_search" placeholder="Cari...">
+                    <button type="button" onclick="clearLibrarySearch()" class="px-3 py-2 bg-gray-100 text-gray-800 rounded-lg text-sm hover:bg-gray-200 transition min-w-[44px] min-h-[44px] flex items-center justify-center" title="Clear">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="library-favorites" class="space-y-3">
+                <div id="favorites-list" class="space-y-3">
+                    <div class="text-center text-gray-500 py-10" data-i18n="favorites_empty">Belum ada favorit. Simpan prompt terbaik Anda!</div>
+                </div>
+            </div>
+
+            <div id="library-history" class="space-y-3 hidden">
+                <div id="history-list" class="space-y-3">
+                    <div class="text-center text-gray-500 py-10" data-i18n="history_empty">Belum ada riwayat. Mulai generate!</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Image Editor Section -->
+        <div id="editor-section" class="section-content hidden space-y-5">
+            <div class="flex items-center justify-between">
+                <h2 class="text-xl font-bold" data-i18n="editor_title">Image Editor</h2>
+                <div class="text-xs text-gray-500" id="editor-info"></div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+                <div class="p-5 md:p-6 space-y-4">
+                    <div class="grid grid-cols-1 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2" data-i18n="editor_upload">Upload Gambar</label>
+                            <input id="editor-file" type="file" accept="image/png,image/jpeg" class="w-full p-2.5 border border-gray-300 rounded-lg bg-gray-50" />
+                            <p class="text-[11px] text-gray-500 mt-1" data-i18n="editor_upload_hint">Mendukung PNG dan JPG. Proses dilakukan di perangkat Anda (offline).</p>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2" data-i18n="editor_format">Format Output</label>
+                                <select id="editor-format" class="w-full select2-dropdown">
+                                    <option value="image/jpeg" selected>JPG (compressed)</option>
+                                    <option value="image/png">PNG (lossless)</option>
+                                </select>
+                            </div>
+                            <div id="editor-jpeg-quality-wrap">
+                                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2" data-i18n="editor_quality">Kualitas JPG</label>
+                                <input id="editor-jpeg-quality" type="range" min="0.3" max="1" step="0.05" value="0.92" class="w-full" />
+                                <div class="flex justify-between text-[11px] text-gray-500 mt-1">
+                                    <span>30%</span>
+                                    <span id="editor-quality-value">92%</span>
+                                    <span>100%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div id="editor-transparency-panel" class="rounded-xl border border-gray-200 p-4 hidden">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <div class="text-sm font-bold text-gray-800" data-i18n="editor_transparency">Transparansi (PNG)</div>
+                                        <div class="text-xs text-gray-500" data-i18n="editor_transparency_hint">Ubah warna putih menjadi transparan (untuk background putih).</div>
+                                    </div>
+                                    <label class="inline-flex items-center cursor-pointer select-none">
+                                        <input id="editor-white-to-alpha" type="checkbox" class="sr-only">
+                                        <div id="editor-alpha-track" class="toggle-track w-11 h-6 bg-gray-200 rounded-full relative transition">
+                                            <div id="editor-alpha-dot" class="toggle-dot absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition"></div>
+                                        </div>
+                                    </label>
+                                </div>
+
+                                <div class="mt-3">
+                                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2" data-i18n="editor_threshold">Ambang Putih</label>
+                                    <input id="editor-threshold" type="range" min="0" max="80" step="1" value="18" class="w-full" />
+                                    <div class="flex justify-between text-[11px] text-gray-500 mt-1">
+                                        <span>0</span>
+                                        <span id="editor-threshold-value">18</span>
+                                        <span>80</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="rounded-xl border border-gray-200 p-4">
+                                <div class="text-sm font-bold text-gray-800" data-i18n="editor_crop">Crop Rasio Aspek</div>
+                                <div class="text-xs text-gray-500" data-i18n="editor_crop_hint">Pilih rasio, lalu crop center otomatis (tanpa drag).</div>
+
+                                <div class="mt-3">
+                                    <select id="editor-crop-ar" class="w-full select2-dropdown">
+                                        <option value="none" data-i18n="editor_ar_none">Tidak ada (as-is)</option>
+                                        <option value="1:1">1:1</option>
+                                        <option value="3:2">3:2</option>
+                                        <option value="2:3">2:3</option>
+                                        <option value="4:5">4:5</option>
+                                        <option value="16:9">16:9</option>
+                                        <option value="9:16">9:16</option>
+                                        <option value="21:9">21:9</option>
+                                    </select>
+                                </div>
+
+                                <div class="mt-3">
+                                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2" data-i18n="editor_resize">Ubah Ukuran</label>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <input id="editor-width" type="number" min="1" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg" placeholder="Width" />
+                                        <input id="editor-height" type="number" min="1" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg" placeholder="Height" />
+                                    </div>
+                                    <div class="mt-2 flex items-center justify-between">
+                                        <label class="inline-flex items-center gap-2 text-sm text-gray-600">
+                                            <input id="editor-lock-ar" type="checkbox" class="rounded border-gray-300" checked>
+                                            <span data-i18n="editor_lock_ar">Kunci rasio</span>
+                                        </label>
+                                        <button type="button" onclick="editorResetSize()" class="text-sm px-3 py-2 rounded-lg bg-gray-100 text-gray-800 hover:bg-gray-200 transition" data-i18n="editor_reset_size">Reset</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            <button type="button" id="editor-apply" class="flex-1 px-4 py-3 rounded-xl bg-emerald-500 text-white font-extrabold hover:bg-emerald-600 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                                <i class="fa-solid fa-wand-magic-sparkles mr-2"></i><span data-i18n="editor_apply">Apply</span>
+                            </button>
+                            <button type="button" id="editor-download" class="flex-1 px-4 py-3 rounded-xl bg-blue-500 text-white font-extrabold hover:bg-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                                <i class="fa-solid fa-download mr-2"></i><span data-i18n="editor_download">Download</span>
+                            </button>
+                            <button type="button" id="editor-clear" class="px-4 py-3 rounded-xl bg-gray-100 text-gray-800 font-bold hover:bg-gray-200 transition">
+                                <i class="fa-solid fa-trash mr-2"></i><span data-i18n="editor_clear">Clear</span>
+                            </button>
+                        </div>
+
+                        <div class="bg-gray-50 rounded-xl p-3">
+                            <canvas id="editor-canvas" class="editor-canvas"></canvas>
+                        </div>
+
+                        <div class="text-xs text-gray-500" data-i18n="editor_note">Catatan: Konversi JPG → PNG tidak bisa mengembalikan kualitas/kompresi asli. Transparansi hanya tersedia pada PNG.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Section -->
+        <div id="stats-section" class="section-content hidden space-y-5">
+            <h2 class="text-xl font-bold" data-i18n="stats_title">Statistik Anda</h2>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div class="stat-card-1 rounded-xl p-4 text-white">
+                    <div class="text-2xl font-bold" id="stat-total">0</div>
+                    <div class="text-sm opacity-80" data-i18n="stat_total">Total Generate</div>
+                </div>
+                <div class="stat-card-2 rounded-xl p-4 text-white">
+                    <div class="text-2xl font-bold" id="stat-favorites">0</div>
+                    <div class="text-sm opacity-80" data-i18n="stat_favorites">Favorit</div>
+                </div>
+                <div class="stat-card-3 rounded-xl p-4 text-white">
+                    <div class="text-2xl font-bold" id="stat-today">0</div>
+                    <div class="text-sm opacity-80" data-i18n="stat_today">Hari Ini</div>
+                </div>
+                <div class="stat-card-4 rounded-xl p-4 text-white">
+                    <div class="text-2xl font-bold" id="stat-streak">0</div>
+                    <div class="text-sm opacity-80" data-i18n="stat_streak">Streak Hari</div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-md p-5">
+                <h3 class="font-bold text-gray-800 mb-4"><i class="fa-solid fa-trophy text-yellow-500 mr-2"></i><span data-i18n="stats_top_categories">Kategori Teratas</span></h3>
+                <div id="top-categories" class="space-y-2">
+                    <p class="text-gray-400 text-sm" data-i18n="stats_no_data">Belum ada data</p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-md p-5">
+                <h3 class="font-bold text-gray-800 mb-4"><i class="fa-solid fa-chart-line text-blue-500 mr-2"></i><span data-i18n="stats_weekly">Aktivitas Mingguan</span></h3>
+                <div id="weekly-activity" class="flex justify-between items-end h-24 gap-1"></div>
+                <div class="flex justify-between text-xs text-gray-400 mt-2">
+                    <span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span><span>Min</span>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Mobile Bottom Navigation -->
+    <nav id="mobile-bottom-nav" class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 shadow-lg safe-area-bottom">
+        <div class="flex items-stretch h-16 px-1">
+            <button type="button" class="mobile-nav-btn flex-1 text-gray-500" data-section="generator" aria-label="Generator">
+                <i class="fa-solid fa-wand-magic-sparkles text-xl"></i>
+                <span class="text-[10px] mt-1 font-medium" data-i18n="nav_generator_short">Generate</span>
+            </button>
+            <button type="button" class="mobile-nav-btn flex-1 text-gray-500" data-section="templates" aria-label="Templates">
+                <i class="fa-solid fa-layer-group text-xl"></i>
+                <span class="text-[10px] mt-1 font-medium" data-i18n="nav_templates_short">Template</span>
+            </button>
+            <button type="button" class="mobile-nav-btn flex-1 text-gray-500" data-section="library" aria-label="Library">
+                <i class="fa-solid fa-bookmark text-xl"></i>
+                <span class="text-[10px] mt-1 font-medium" data-i18n="nav_library_short">Library</span>
+            </button>
+            <button type="button" class="mobile-nav-btn flex-1 text-gray-500" data-section="editor" aria-label="Editor">
+                <i class="fa-solid fa-image text-xl"></i>
+                <span class="text-[10px] mt-1 font-medium" data-i18n="nav_editor_short">Editor</span>
+            </button>
+            <button type="button" class="mobile-nav-btn flex-1 text-gray-500" data-section="stats" aria-label="Stats">
+                <i class="fa-solid fa-chart-bar text-xl"></i>
+                <span class="text-[10px] mt-1 font-medium" data-i18n="nav_stats_short">Statistik</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="fixed inset-0 z-50 hidden bg-gray-900/50 backdrop-blur-sm overflow-y-auto" onclick="if(event.target === this) closeSettings()">
+        <div class="relative top-10 mx-auto p-5 border w-full max-w-md shadow-lg rounded-xl bg-white m-4">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-gray-900" data-i18n="settings_title">Pengaturan</h3>
+                <button type="button" onclick="closeSettings()" class="text-gray-400 hover:text-gray-600 p-2">
+                    <i class="fa-solid fa-times"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4">
+                <!-- Language -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="settings_language">Bahasa</label>
+                    <select id="language-select" class="w-full select2-dropdown" onchange="changeLanguage()">
+                        <option value="id">🇮🇩 Bahasa Indonesia</option>
+                        <option value="en">🇺🇸 English</option>
+                        <option value="ar">🇸🇦 العربية</option>
+                    </select>
+                </div>
+
+                <!-- AI Provider -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="settings_provider">Penyedia AI</label>
+                    <select id="ai-provider" class="w-full select2-dropdown" onchange="toggleProviderFields()">
+                        <option value="gemini">Google Gemini</option>
+                        <option value="openai">OpenAI</option>
+                    </select>
+                </div>
+
+                <!-- AI Model -->
+                <div id="gemini-model-field">
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="settings_model_gemini">Model Gemini</label>
+                    <select id="gemini-model" class="w-full select2-dropdown">
+                        <option value="gemini-1.5-flash">gemini-1.5-flash (fast)</option>
+                        <option value="gemini-1.5-pro">gemini-1.5-pro (quality)</option>
+                    </select>
+                </div>
+                <div id="openai-model-field" class="hidden">
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="settings_model_openai">Model OpenAI</label>
+                    <select id="openai-model" class="w-full select2-dropdown">
+                        <option value="gpt-4o-mini">gpt-4o-mini (recommended)</option>
+                        <option value="gpt-4o">gpt-4o</option>
+                        <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
+                    </select>
+                </div>
+
+                <div id="gemini-field">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Gemini API Key</label>
+                    <input type="password" id="gemini-key" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="AIzaSy...">
+                    <p class="text-xs text-gray-500 mt-1"><span data-i18n="settings_gemini_hint">Dapatkan key gratis:</span> <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-blue-500 underline">Google AI Studio</a></p>
+                </div>
+
+                <div id="openai-field" class="hidden">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">OpenAI API Key</label>
+                    <input type="password" id="openai-key" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="sk-...">
+                </div>
+
+                <!-- Random Category Pool -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="settings_random_pool">Random Kategori</label>
+                    <select id="category-pool" class="w-full select2-dropdown">
+                        <option value="trending" data-i18n="settings_pool_trending">Tren Shutterstock</option>
+                        <option value="all" data-i18n="settings_pool_all">Semua Kategori</option>
+                    </select>
+                    <p class="text-[11px] text-gray-500 mt-1" data-i18n="settings_random_pool_hint">Dipakai untuk tombol acak & saat kategori tidak dipilih.</p>
+                </div>
+
+                <!-- Theme Color -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="settings_theme">Tema Warna</label>
+                    <select id="theme-preset" class="w-full select2-dropdown">
+                        <option value="shutterstock" data-i18n="theme_shutterstock">Shutterstock (Red)</option>
+                        <option value="red" data-i18n="theme_red">Merah</option>
+                        <option value="emerald" data-i18n="theme_emerald">Hijau Emerald</option>
+                        <option value="blue" data-i18n="theme_blue">Biru</option>
+                        <option value="purple" data-i18n="theme_purple">Ungu</option>
+                        <option value="orange" data-i18n="theme_orange">Oranye</option>
+                        <option value="slate" data-i18n="theme_slate">Abu Gelap</option>
+                        <option value="rose" data-i18n="theme_rose">Rose</option>
+                        <option value="cyan" data-i18n="theme_cyan">Cyan</option>
+                        <option value="teal" data-i18n="theme_teal">Teal</option>
+                        <option value="sky" data-i18n="theme_sky">Sky</option>
+                        <option value="indigo" data-i18n="theme_indigo">Indigo</option>
+                        <option value="fuchsia" data-i18n="theme_fuchsia">Fuchsia</option>
+                        <option value="lime" data-i18n="theme_lime">Lime</option>
+                        <option value="amber" data-i18n="theme_amber">Amber</option>
+                    </select>
+                    <p class="text-[11px] text-gray-500 mt-1" data-i18n="settings_theme_hint">Mengubah warna tombol, aksen, dan highlight.</p>
+                </div>
+
+                <!-- App Lock -->
+                <div class="rounded-lg border border-gray-200 p-3">
+                    <div class="flex items-center justify-between gap-3">
+                        <div>
+                            <div class="text-sm font-semibold text-gray-800" data-i18n="lock_title">Kunci Aplikasi</div>
+                            <div class="text-xs text-gray-500" data-i18n="lock_subtitle">Aktifkan pola untuk mengunci aplikasi</div>
+                        </div>
+                        <label class="inline-flex items-center cursor-pointer select-none">
+                            <input id="lock-enabled" type="checkbox" class="sr-only">
+                            <div id="lock-toggle-track" class="toggle-track w-11 h-6 bg-gray-200 rounded-full relative transition">
+                                <div id="lock-toggle-dot" class="toggle-dot absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition"></div>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div class="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <button type="button" onclick="openPatternSetup()" class="px-3 py-2 rounded-lg bg-emerald-500 text-white text-sm font-semibold hover:bg-emerald-600 transition" data-i18n="lock_set_pattern">Atur Pola</button>
+                        <button type="button" onclick="lockNow()" class="px-3 py-2 rounded-lg bg-gray-100 text-gray-800 text-sm font-semibold hover:bg-gray-200 transition" data-i18n="lock_lock_now">Kunci Sekarang</button>
+                        <button type="button" onclick="clearPattern()" class="px-3 py-2 rounded-lg bg-red-50 text-red-600 text-sm font-semibold hover:bg-red-100 transition" data-i18n="lock_clear">Hapus</button>
+                    </div>
+                    <p class="text-[11px] text-gray-500 mt-2" data-i18n="lock_hint">Catatan: Pola disimpan di perangkat (localStorage). Jangan gunakan untuk data sensitif.</p>
+                </div>
+
+                <hr class="my-4">
+
+                <h4 class="font-semibold text-gray-800" data-i18n="settings_preferences">Preferensi Default</h4>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="settings_default_category">Kategori Default</label>
+                    <select id="default-category" class="w-full select2-dropdown">
+                        <option value="" data-i18n="settings_none">Tidak Ada (Acak)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="settings_default_aspect">Rasio Aspek Default</label>
+                    <select id="default-aspect" class="w-full select2-dropdown">
+                        <option value="--ar 3:2">3:2 (Standar)</option>
+                        <option value="--ar 16:9">16:9 (Sinematik)</option>
+                        <option value="--ar 1:1">1:1 (Kotak)</option>
+                        <option value="--ar 9:16">9:16 (Vertikal)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="settings_default_style">Gaya Default</label>
+                    <select id="default-style" class="w-full select2-dropdown">
+                        <option value="photorealistic">📷 Fotorealistik</option>
+                        <option value="cinematic">🎬 Sinematik</option>
+                        <option value="editorial">📰 Editorial</option>
+                        <option value="minimalist">◻️ Minimalis</option>
+                    </select>
+                </div>
+
+                <div class="pt-4 space-y-2">
+                    <button type="button" onclick="saveSettings()" class="w-full bg-emerald-500 text-white font-bold py-2.5 px-4 rounded-lg hover:bg-emerald-600 transition">
+                        <i class="fa-solid fa-save mr-2"></i><span data-i18n="btn_save_settings">Simpan Pengaturan</span>
+                    </button>
+                    <button type="button" onclick="resetAllData()" class="w-full bg-gray-100 text-gray-700 font-medium py-2.5 px-4 rounded-lg hover:bg-gray-200 transition">
+                        <i class="fa-solid fa-trash mr-2"></i><span data-i18n="btn_reset_data">Reset Semua Data</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- App Lock Overlay (must be above Settings modal) -->
+    <div id="lock-overlay" class="fixed inset-0 z-[60] hidden bg-gray-900/60 backdrop-blur-sm">
+        <div class="min-h-screen flex items-center justify-center px-4 py-10">
+            <div class="w-full max-w-md bg-white rounded-2xl shadow-xl p-5">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <h3 id="lock-title" class="text-lg font-extrabold text-gray-900">Buka Kunci</h3>
+                        <p id="lock-subtitle" class="text-sm text-gray-500">Gambar pola untuk melanjutkan</p>
+                    </div>
+                    <button id="lock-close-btn" type="button" onclick="closeLockOverlay()" class="text-gray-400 hover:text-gray-600 p-2" aria-label="Close">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <div class="mt-4">
+                    <div class="pattern-area" id="pattern-area">
+                        <svg class="pattern-svg" id="pattern-svg" viewBox="0 0 300 300" preserveAspectRatio="none">
+                            <path id="pattern-path" d="" stroke="rgba(var(--brand-rgb) / 0.9)" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        <div class="pattern-grid" id="pattern-grid">
+                            <div class="pattern-node" data-node="1"></div>
+                            <div class="pattern-node" data-node="2"></div>
+                            <div class="pattern-node" data-node="3"></div>
+                            <div class="pattern-node" data-node="4"></div>
+                            <div class="pattern-node" data-node="5"></div>
+                            <div class="pattern-node" data-node="6"></div>
+                            <div class="pattern-node" data-node="7"></div>
+                            <div class="pattern-node" data-node="8"></div>
+                            <div class="pattern-node" data-node="9"></div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 flex items-center justify-between">
+                        <div class="text-xs text-gray-500" id="lock-status"></div>
+                        <button type="button" onclick="resetPatternInput()" class="text-sm px-3 py-2 rounded-lg bg-gray-100 text-gray-800 hover:bg-gray-200 transition" data-i18n="lock_reset">Reset</button>
+                    </div>
+
+                    <div class="mt-4 grid grid-cols-2 gap-2">
+                        <button id="lock-primary-btn" type="button" onclick="confirmPatternIfSetup()" class="px-3 py-2 rounded-lg bg-emerald-500 text-white font-bold hover:bg-emerald-600 transition">Konfirmasi</button>
+                        <button id="lock-secondary-btn" type="button" onclick="cancelPatternSetup()" class="px-3 py-2 rounded-lg bg-gray-100 text-gray-800 font-semibold hover:bg-gray-200 transition">Batal</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-20 md:bottom-5 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-4 py-2.5 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 z-[70] flex items-center gap-2 pointer-events-none">
+        <i id="toast-icon" class="fa-solid fa-check-circle"></i>
+        <span id="toast-message">Notifikasi</span>
+    </div>
+
+    <script>
+        // =====================
+        // TRANSLATIONS
+        // =====================
+        const TRANSLATIONS = {
+            id: {
+                nav_generator: "Generator",
+                nav_templates: "Template",
+                nav_favorites: "Favorit",
+                nav_history: "Riwayat",
+                nav_stats: "Statistik",
+                nav_library: "Library",
+                nav_editor: "Editor",
+                nav_generator_short: "Generate",
+                nav_templates_short: "Template",
+                nav_library_short: "Library",
+                nav_editor_short: "Editor",
+                nav_stats_short: "Statistik",
+
+                main_title_1: "Buat Karya",
+                main_title_2: "Masterpiece",
+                main_subtitle: "Generate prompt AI & metadata dalam hitungan detik",
+
+                api_warning: "API Key belum dikonfigurasi.",
+
+                label_category: "Kategori",
+                label_aspect: "Rasio Aspek",
+                label_style: "Gaya Preset",
+                label_describe: "Deskripsikan Visi Anda",
+                select_category: "Pilih Kategori...",
+                input_placeholder: "Contoh: Pemandangan gunung yang indah saat matahari terbenam...",
+                input_hint: "Deskripsikan atau biarkan AI menyempurnakan",
+                hint_random_pool: "Random mengikuti pengaturan Tren/All",
+
+                btn_generate: "Generate Aset",
+                btn_save: "Simpan",
+                btn_copy: "Salin",
+                btn_copy_all: "Salin Semua",
+                btn_regenerate: "Ulang",
+                btn_clear_all: "Hapus Semua",
+                btn_clear_history: "Hapus Semua Riwayat",
+                btn_load: "Muat",
+
+                result_prompt: "Prompt AI",
+                result_title: "Judul",
+                result_categories: "Kategori",
+                result_description: "Deskripsi",
+                result_keywords: "Kata Kunci",
+
+                templates_title: "Template Cepat",
+                templates_subtitle: "Klik template untuk mulai generate dengan cepat",
+
+                favorites_title: "Favorit",
+                favorites_empty: "Belum ada favorit. Simpan prompt terbaik Anda!",
+
+                history_title: "Riwayat",
+                history_empty: "Belum ada riwayat. Mulai generate!",
+                history_search: "Cari riwayat...",
+
+                stats_title: "Statistik Anda",
+                stat_total: "Total Generate",
+                stat_favorites: "Favorit",
+                stat_today: "Hari Ini",
+                stat_streak: "Streak Hari",
+                stats_top_categories: "Kategori Teratas",
+                stats_no_data: "Belum ada data",
+                stats_weekly: "Aktivitas Mingguan",
+
+                settings_title: "Pengaturan",
+                settings_language: "Bahasa",
+                settings_provider: "Penyedia AI",
+                settings_model_gemini: "Model Gemini",
+                settings_model_openai: "Model OpenAI",
+                settings_gemini_hint: "Dapatkan key gratis:",
+                settings_random_pool: "Random Kategori",
+                settings_pool_trending: "Tren Shutterstock",
+                settings_pool_all: "Semua Kategori",
+                settings_random_pool_hint: "Dipakai untuk tombol acak & saat kategori tidak dipilih.",
+                settings_theme: "Tema Warna",
+                settings_theme_hint: "Mengubah warna tombol, aksen, dan highlight.",
+                theme_shutterstock: "Shutterstock (Merah)",
+                theme_red: "Merah",
+                theme_emerald: "Hijau Emerald",
+                theme_blue: "Biru",
+                theme_purple: "Ungu",
+                theme_orange: "Oranye",
+                theme_slate: "Abu Gelap",
+                theme_rose: "Rose",
+                theme_cyan: "Cyan",
+                theme_teal: "Teal",
+                theme_sky: "Sky",
+                theme_indigo: "Indigo",
+                theme_fuchsia: "Fuchsia",
+                theme_lime: "Lime",
+                theme_amber: "Amber",
+
+                library_title: "Library",
+                library_tab_favorites: "Favorit",
+                library_tab_history: "Riwayat",
+                library_tab_actions: "Aksi",
+                library_clear_favorites: "Hapus Favorit",
+                library_clear_history: "Hapus Riwayat",
+                library_actions_hint: "Tip: Gunakan pencarian untuk menemukan item dengan cepat.",
+                library_search: "Cari...",
+
+                editor_title: "Image Editor",
+                editor_upload: "Upload Gambar",
+                editor_upload_hint: "Mendukung PNG dan JPG. Proses dilakukan di perangkat Anda (offline).",
+                editor_format: "Format Output",
+                editor_quality: "Kualitas JPG",
+                editor_transparency: "Transparansi (PNG)",
+                editor_transparency_hint: "Ubah warna putih menjadi transparan (untuk background putih).",
+                editor_threshold: "Ambang Putih",
+                editor_crop: "Crop Rasio Aspek",
+                editor_crop_hint: "Pilih rasio, lalu crop center otomatis (tanpa drag).",
+                editor_ar_none: "Tidak ada (as-is)",
+                editor_resize: "Ubah Ukuran",
+                editor_lock_ar: "Kunci rasio",
+                editor_reset_size: "Reset",
+                editor_apply: "Apply",
+                editor_download: "Download",
+                editor_clear: "Clear",
+                editor_note: "Catatan: Konversi JPG → PNG tidak bisa mengembalikan kualitas/kompresi asli. Transparansi hanya tersedia pada PNG.",
+
+                settings_preferences: "Preferensi Default",
+                settings_default_category: "Kategori Default",
+                settings_default_aspect: "Rasio Aspek Default",
+                settings_default_style: "Gaya Default",
+                settings_none: "Tidak Ada (Acak)",
+
+                btn_save_settings: "Simpan Pengaturan",
+                btn_reset_data: "Reset Semua Data",
+
+                toast_copied: "Disalin ke clipboard!",
+                toast_saved: "Ditambahkan ke favorit!",
+                toast_removed: "Dihapus dari favorit",
+                toast_generated: "Aset berhasil di-generate!",
+                toast_enhanced: "Teks disempurnakan!",
+                toast_settings_saved: "Pengaturan tersimpan!",
+                toast_error: "Terjadi kesalahan",
+                chars: "karakter",
+
+                lock_title: "Kunci Aplikasi",
+                lock_subtitle: "Aktifkan pola untuk mengunci aplikasi",
+                lock_set_pattern: "Atur Pola",
+                lock_lock_now: "Kunci Sekarang",
+                lock_clear: "Hapus",
+                lock_hint: "Catatan: Pola disimpan di perangkat (localStorage). Jangan gunakan untuk data sensitif.",
+                lock_unlock_title: "Buka Kunci",
+                lock_unlock_subtitle: "Gambar pola untuk melanjutkan",
+                lock_setup_title: "Atur Pola",
+                lock_setup_subtitle: "Gambar pola baru (min. 4 titik)",
+                lock_confirm_title: "Konfirmasi Pola",
+                lock_confirm_subtitle: "Gambar ulang pola untuk konfirmasi",
+                lock_reset: "Reset",
+                lock_confirm: "Konfirmasi",
+                lock_cancel: "Batal",
+                lock_unlock_btn: "Buka",
+                lock_enabled_toast: "Kunci aplikasi diaktifkan",
+                lock_disabled_toast: "Kunci aplikasi dimatikan",
+                lock_set_success: "Pola tersimpan",
+                lock_set_mismatch: "Pola tidak sama",
+                lock_set_too_short: "Pola minimal 4 titik",
+                lock_unlock_failed: "Pola salah",
+                lock_locked: "Aplikasi terkunci",
+                lock_no_pattern: "Belum ada pola. Silakan atur pola dulu."
+            },
+            en: {
+                nav_generator: "Generator",
+                nav_templates: "Templates",
+                nav_favorites: "Favorites",
+                nav_history: "History",
+                nav_stats: "Stats",
+                nav_generator_short: "Generate",
+                nav_templates_short: "Templates",
+                nav_favorites_short: "Favorites",
+                nav_history_short: "History",
+                nav_stats_short: "Stats",
+
+                main_title_1: "Create",
+                main_title_2: "Masterpieces",
+                main_subtitle: "Generate AI prompts & metadata in seconds",
+
+                api_warning: "API Key not configured.",
+
+                label_category: "Category",
+                label_aspect: "Aspect Ratio",
+                label_style: "Style Preset",
+                label_describe: "Describe Your Vision",
+                select_category: "Select Category...",
+                input_placeholder: "Example: Beautiful mountain landscape at sunset...",
+                input_hint: "Be descriptive or let AI enhance it",
+                hint_random_pool: "Random uses Trending/All setting",
+
+                btn_generate: "Generate Assets",
+                btn_save: "Save",
+                btn_copy: "Copy",
+                btn_copy_all: "Copy All",
+                btn_regenerate: "Regenerate",
+                btn_clear_all: "Clear All",
+                btn_clear_history: "Clear All History",
+                btn_load: "Load",
+
+                result_prompt: "AI Prompt",
+                result_title: "Title",
+                result_categories: "Categories",
+                result_description: "Description",
+                result_keywords: "Keywords",
+
+                templates_title: "Quick Templates",
+                templates_subtitle: "Click a template to quickly start generating",
+
+                favorites_title: "Favorites",
+                favorites_empty: "No favorites yet. Save your best prompts!",
+
+                history_title: "History",
+                history_empty: "No history yet. Start generating!",
+                history_search: "Search history...",
+
+                stats_title: "Your Statistics",
+                stat_total: "Total Generations",
+                stat_favorites: "Favorites",
+                stat_today: "Today",
+                stat_streak: "Day Streak",
+                stats_top_categories: "Top Categories",
+                stats_no_data: "No data yet",
+                stats_weekly: "Weekly Activity",
+
+                settings_title: "Settings",
+                settings_language: "Language",
+                settings_provider: "AI Provider",
+                settings_model_gemini: "Gemini Model",
+                settings_model_openai: "OpenAI Model",
+                settings_gemini_hint: "Get free key:",
+                settings_random_pool: "Random Category",
+                settings_pool_trending: "Trending on Shutterstock",
+                settings_pool_all: "All Categories",
+                settings_random_pool_hint: "Used by random button & when no category selected.",
+                settings_theme: "Color Theme",
+                settings_theme_hint: "Changes buttons, accents, and highlights.",
+                theme_shutterstock: "Shutterstock (Red)",
+                theme_red: "Red",
+                theme_emerald: "Emerald",
+                theme_blue: "Blue",
+                theme_purple: "Purple",
+                theme_orange: "Orange",
+                theme_slate: "Slate",
+                theme_rose: "Rose",
+                theme_cyan: "Cyan",
+                theme_teal: "Teal",
+                theme_sky: "Sky",
+                theme_indigo: "Indigo",
+                theme_fuchsia: "Fuchsia",
+                theme_lime: "Lime",
+                theme_amber: "Amber",
+
+                settings_preferences: "Default Preferences",
+                settings_default_category: "Default Category",
+                settings_default_aspect: "Default Aspect Ratio",
+                settings_default_style: "Default Style",
+                settings_none: "None (Random)",
+
+                btn_save_settings: "Save Settings",
+                btn_reset_data: "Reset All Data",
+
+                toast_copied: "Copied to clipboard!",
+                toast_saved: "Added to favorites!",
+                toast_removed: "Removed from favorites",
+                toast_generated: "Assets generated successfully!",
+                toast_enhanced: "Text enhanced!",
+                toast_settings_saved: "Settings saved!",
+                toast_error: "An error occurred",
+                chars: "chars",
+
+                lock_title: "App Lock",
+                lock_subtitle: "Enable a pattern lock for the app",
+                lock_set_pattern: "Set Pattern",
+                lock_lock_now: "Lock Now",
+                lock_clear: "Clear",
+                lock_hint: "Note: Pattern is stored on this device (localStorage). Do not use for sensitive data.",
+                lock_unlock_title: "Unlock",
+                lock_unlock_subtitle: "Draw your pattern to continue",
+                lock_setup_title: "Set Pattern",
+                lock_setup_subtitle: "Draw a new pattern (min 4 dots)",
+                lock_confirm_title: "Confirm Pattern",
+                lock_confirm_subtitle: "Draw again to confirm",
+                lock_reset: "Reset",
+                lock_confirm: "Confirm",
+                lock_cancel: "Cancel",
+                lock_unlock_btn: "Unlock",
+                lock_enabled_toast: "App lock enabled",
+                lock_disabled_toast: "App lock disabled",
+                lock_set_success: "Pattern saved",
+                lock_set_mismatch: "Pattern does not match",
+                lock_set_too_short: "Minimum 4 dots",
+                lock_unlock_failed: "Wrong pattern",
+                lock_locked: "App locked",
+                lock_no_pattern: "No pattern set. Please set a pattern first."
+            },
+            ar: {
+                nav_generator: "المولد",
+                nav_templates: "القوالب",
+                nav_favorites: "المفضلة",
+                nav_history: "السجل",
+                nav_stats: "الإحصائيات",
+                nav_generator_short: "توليد",
+                nav_templates_short: "قوالب",
+                nav_favorites_short: "مفضلة",
+                nav_history_short: "سجل",
+                nav_stats_short: "إحصاء",
+
+                main_title_1: "أنشئ",
+                main_title_2: "روائع",
+                main_subtitle: "ولّد أوامر AI والبيانات الوصفية في ثوانٍ",
+
+                api_warning: "مفتاح API غير مكوّن.",
+
+                label_category: "الفئة",
+                label_aspect: "نسبة العرض",
+                label_style: "نمط مسبق",
+                label_describe: "صف رؤيتك",
+                select_category: "اختر فئة...",
+                input_placeholder: "مثال: منظر جبلي جميل عند غروب الشمس...",
+                input_hint: "كن وصفيًا أو دع AI يحسنه",
+                hint_random_pool: "العشوائي يستخدم إعداد الترند/الكل",
+
+                btn_generate: "توليد الأصول",
+                btn_save: "حفظ",
+                btn_copy: "نسخ",
+                btn_copy_all: "نسخ الكل",
+                btn_regenerate: "إعادة",
+                btn_clear_all: "مسح الكل",
+                btn_clear_history: "مسح كل السجل",
+                btn_load: "تحميل",
+
+                result_prompt: "أمر AI",
+                result_title: "العنوان",
+                result_categories: "الفئات",
+                result_description: "الوصف",
+                result_keywords: "الكلمات المفتاحية",
+
+                templates_title: "قوالب سريعة",
+                templates_subtitle: "انقر على قالب للبدء بسرعة",
+
+                favorites_title: "المفضلة",
+                favorites_empty: "لا توجد مفضلات بعد. احفظ أفضل أوامرك!",
+
+                history_title: "السجل",
+                history_empty: "لا يوجد سجل بعد. ابدأ التوليد!",
+                history_search: "بحث في السجل...",
+
+                stats_title: "إحصائياتك",
+                stat_total: "إجمالي التوليدات",
+                stat_favorites: "المفضلة",
+                stat_today: "اليوم",
+                stat_streak: "أيام متتالية",
+                stats_top_categories: "أعلى الفئات",
+                stats_no_data: "لا توجد بيانات بعد",
+                stats_weekly: "النشاط الأسبوعي",
+
+                settings_title: "الإعدادات",
+                settings_language: "اللغة",
+                settings_provider: "مزود AI",
+                settings_model_gemini: "نموذج Gemini",
+                settings_model_openai: "نموذج OpenAI",
+                settings_gemini_hint: "احصل على مفتاح مجاني:",
+                settings_random_pool: "فئة عشوائية",
+                settings_pool_trending: "الترند في Shutterstock",
+                settings_pool_all: "كل الفئات",
+                settings_random_pool_hint: "يستخدمه زر العشوائي وعند عدم اختيار فئة.",
+                settings_theme: "سمة الألوان",
+                settings_theme_hint: "تغيّر الأزرار والتمييز والألوان.",
+                theme_shutterstock: "Shutterstock (أحمر)",
+                theme_red: "أحمر",
+                theme_emerald: "زمردي",
+                theme_blue: "أزرق",
+                theme_purple: "بنفسجي",
+                theme_orange: "برتقالي",
+                theme_slate: "رمادي داكن",
+                theme_rose: "وردي",
+                theme_cyan: "سماوي",
+                theme_teal: "فيروزي",
+                theme_sky: "سماوي فاتح",
+                theme_indigo: "نيلي",
+                theme_fuchsia: "فوشيا",
+                theme_lime: "ليموني",
+                theme_amber: "كهرماني",
+
+                settings_preferences: "التفضيلات الافتراضية",
+                settings_default_category: "الفئة الافتراضية",
+                settings_default_aspect: "نسبة العرض الافتراضية",
+                settings_default_style: "النمط الافتراضي",
+                settings_none: "لا شيء (عشوائي)",
+
+                btn_save_settings: "حفظ الإعدادات",
+                btn_reset_data: "إعادة تعيين كل البيانات",
+
+                toast_copied: "تم النسخ!",
+                toast_saved: "أضيف إلى المفضلة!",
+                toast_removed: "أزيل من المفضلة",
+                toast_generated: "تم توليد الأصول بنجاح!",
+                toast_enhanced: "تم تحسين النص!",
+                toast_settings_saved: "تم حفظ الإعدادات!",
+                toast_error: "حدث خطأ",
+                chars: "حرف",
+
+                lock_title: "قفل التطبيق",
+                lock_subtitle: "فعّل قفل النمط للتطبيق",
+                lock_set_pattern: "تعيين النمط",
+                lock_lock_now: "اقفل الآن",
+                lock_clear: "مسح",
+                lock_hint: "ملاحظة: يتم حفظ النمط على هذا الجهاز (localStorage). لا تستخدمه للبيانات الحساسة.",
+                lock_unlock_title: "فتح القفل",
+                lock_unlock_subtitle: "ارسم النمط للمتابعة",
+                lock_setup_title: "تعيين النمط",
+                lock_setup_subtitle: "ارسم نمطًا جديدًا (حد أدنى 4 نقاط)",
+                lock_confirm_title: "تأكيد النمط",
+                lock_confirm_subtitle: "ارسم مرة أخرى للتأكيد",
+                lock_reset: "إعادة",
+                lock_confirm: "تأكيد",
+                lock_cancel: "إلغاء",
+                lock_unlock_btn: "فتح",
+                lock_enabled_toast: "تم تفعيل قفل التطبيق",
+                lock_disabled_toast: "تم إيقاف قفل التطبيق",
+                lock_set_success: "تم حفظ النمط",
+                lock_set_mismatch: "النمط غير متطابق",
+                lock_set_too_short: "الحد الأدنى 4 نقاط",
+                lock_unlock_failed: "نمط خاطئ",
+                lock_locked: "تم قفل التطبيق",
+                lock_no_pattern: "لا يوجد نمط. يرجى تعيين نمط أولاً."
+            }
+        };
+
+        function t(key) {
+            return TRANSLATIONS[currentLang]?.[key] || TRANSLATIONS.id[key] || key;
+        }
+
+        // =====================
+        // STATE
+        // =====================
+        let currentLang = 'id';
+        let currentSectionIndex = 0;
+        const SECTIONS = ['generator', 'templates', 'library', 'editor', 'stats'];
+
+        let currentResult = null;
+        let currentIsFavorite = false;
+
+        // =====================
+        // DATA & CONSTANTS
+        // =====================
+        // NOTE: removed any categories with Quran/Calligraphy/Kaligrafi
+        const CATEGORIES = [
+            "Abstract", "Backgrounds/Textures", "Architecture", "Buildings/Landmarks",
+            "Business/Finance", "Technology", "Nature", "Landscapes", "Mountains",
+            "Forest", "Desert", "Water/Ocean", "Beaches", "Gardens",
+            "Food and Drink", "Beverages", "Desserts", "Vegetables", "Fruits",
+            "Industrial", "Interiors", "Furniture", "Home Decor", "Kitchen",
+            "Objects", "Tools", "Electronics", "Gadgets", "Books",
+            "Patterns", "Geometric", "Floral Patterns", "Islamic Patterns", "Arabesque",
+            "Islamic Abstract Pattern", "Geometric Ornament", "Ornamental Mosaic",
+            "Signs/Symbols", "Icons", "Typography", "Minimal Typography",
+            "Transportation", "Vehicles", "Cars", "Boats", "Airplanes",
+            "Vintage", "Retro", "Antique", "Classic", "Historical Objects",
+            "Workplace", "Office", "Desk Setup", "Stationery", "Documents",
+            "Science", "Laboratory", "Chemistry", "Physics", "Astronomy",
+            "Space", "Planets", "Stars", "Galaxy", "Universe",
+            "Weather", "Clouds", "Rain", "Snow", "Sunrise/Sunset",
+            "Seasons", "Spring", "Summer", "Autumn", "Winter",
+            "Urban", "City", "Streets", "Buildings", "Skyline",
+            "Rural", "Countryside", "Farms", "Fields", "Barns",
+            "Macro Photography", "Close-up", "Details", "Textures", "Materials",
+            "Minimalist", "Clean", "Simple", "Modern", "Contemporary",
+            "Flat Lay", "Top View", "Arrangement", "Composition", "Still Life",
+            "Concepts", "Ideas", "Abstract Concepts", "Metaphors", "Symbols",
+            "Communications", "Networks", "Connections", "Digital", "Data",
+            "Computer/IT", "Coding", "Software", "Hardware", "Servers",
+            "Construction", "Building Materials", "Equipment", "Sites",
+            "Currency/Finance", "Money", "Banking", "Investment", "Economy",
+            "Design", "Graphics", "UI/UX", "Layout", "Creative",
+            "Energy", "Power", "Electricity", "Solar", "Wind",
+            "Green Energy", "Sustainability", "Eco-friendly", "Recycling", "Environment",
+            "Cryptocurrency", "Blockchain", "Bitcoin", "Digital Currency", "NFT",
+            "E-commerce", "Shopping", "Packages", "Delivery", "Cart",
+            "Ramadan", "Eid", "Mosque Interior", "Islamic Geometry", "Lanterns",
+            "Prayer Rugs", "Tasbih", "Dates", "Crescent Moon"
+        ];
+
+        // A curated list used when the user chooses "Trending Shutterstock" in settings.
+        // (Approximation of common Shutterstock-trending safe themes.)
+        const TRENDING_CATEGORIES = [
+            "Abstract", "Backgrounds/Textures", "Minimalist", "Technology", "Workplace",
+            "Food and Drink", "Flat Lay", "Architecture", "Interiors", "Patterns",
+            "Geometric", "Islamic Patterns", "Arabesque", "Islamic Abstract Pattern",
+            "Skyline", "Sunrise/Sunset", "Macro Photography", "Eco-friendly",
+            "Sustainability", "E-commerce", "Cryptocurrency", "Data", "UI/UX",
+            "Ramadan", "Eid", "Lanterns", "Crescent Moon"
+        ];
+
+        // NOTE: removed template with Kaligrafi/Calligraphy, replaced with safe abstract pattern
+        const TEMPLATES = [
+            { name: "Ruang Kerja Modern", icon: "💻", category: "Workplace", prompt: "Modern minimalist workspace with laptop, notebook, coffee cup on clean wooden desk, soft natural lighting, empty scene" },
+            { name: "Makanan Sehat", icon: "🥗", category: "Food and Drink", prompt: "Fresh organic healthy food arrangement with colorful vegetables and fruits on rustic wooden table, top view, no people" },
+            { name: "Pemandangan Gunung", icon: "🏔️", category: "Mountains", prompt: "Majestic mountain landscape at golden hour with dramatic clouds and misty valleys, panoramic view" },
+            { name: "Arsitektur Masjid", icon: "🕌", category: "Mosque Interior", prompt: "Beautiful mosque interior with intricate geometric ornament patterns, ornate arches, soft light through windows, no people" },
+            { name: "Kota Malam", icon: "🌆", category: "Skyline", prompt: "Modern city skyline at twilight with illuminated skyscrapers reflecting on calm water, long exposure" },
+            { name: "Teknologi Digital", icon: "📱", category: "Technology", prompt: "Modern smartphone on marble surface with wireless earbuds and smartwatch, minimalist tech flat lay" },
+            { name: "Kopi & Buku", icon: "☕", category: "Beverages", prompt: "Cozy coffee shop still life with latte art in ceramic cup, open book, warm ambient lighting, no people" },
+            { name: "Pola Islami", icon: "✨", category: "Islamic Patterns", prompt: "Intricate Islamic geometric arabesque pattern, gold and deep blue colors, seamless tileable design, no text" },
+            { name: "Ornamen Abstrak", icon: "🌀", category: "Islamic Abstract Pattern", prompt: "Abstract islamic-inspired geometric ornament, modern minimal pattern, neutral tones, seamless tile, no text" },
+            { name: "Pantai Tropis", icon: "🏖️", category: "Beaches", prompt: "Pristine tropical beach with turquoise water, white sand, palm trees swaying, paradise scenery, no people" },
+            { name: "Kantor Minimalis", icon: "🏢", category: "Office", prompt: "Clean minimalist office interior with modern furniture, large windows, indoor plants, empty workspace" },
+            { name: "Hutan Pinus", icon: "🌲", category: "Forest", prompt: "Misty pine forest with sunbeams filtering through tall trees, moss-covered ground, mystical atmosphere" },
+            { name: "Flat Lay Makanan", icon: "🍽️", category: "Flat Lay", prompt: "Beautiful food flat lay with fresh ingredients, herbs, spices on dark marble surface, overhead shot, no people" },
+            { name: "Ramadan Dekor", icon: "🌙", category: "Ramadan", prompt: "Ramadan decoration still life with golden lanterns, dates in ornate bowl, crescent moon decor, warm ambient glow, no people" },
+            { name: "Abstrak Geometris", icon: "🔷", category: "Geometric", prompt: "Abstract geometric composition with overlapping shapes, gradient colors, modern minimalist style" },
+            { name: "Sunrise Gunung", icon: "🌅", category: "Sunrise/Sunset", prompt: "Breathtaking sunrise over mountain range with colorful sky, golden light illuminating peaks, wide cinematic view" }
+        ];
+
+        // Background content filter (silent)
+        const CONTENT_FILTER = `
+CRITICAL RULES - MUST FOLLOW:
+1. NEVER include human faces, human figures, portraits, or any part of human body
+2. NEVER include animal faces, animal figures, or any living creatures
+3. If the scene requires presence of people, show ONLY: silhouettes from far away, shadows, backs of people facing away, or just objects they would use
+4. Focus on: objects, landscapes, architecture, food, technology, nature (plants only), abstract concepts, patterns, textures
+5. For business/workplace scenes: show empty desks, equipment only
+6. For lifestyle scenes: show products, environments, without any living beings
+7. If input explicitly requests faces or living beings, IGNORE that request and create an alternative without them
+8. Avoid religious texts or sacred scripture content. Prefer abstract ornamental geometry.
+`;
+
+        // =====================
+        // INIT
+        // =====================
+        document.addEventListener('DOMContentLoaded', () => {
+            populateCategories();
+            populateTemplates();
+            initSelect2();
+
+            loadTheme();
+            loadLanguage();
+            loadSettings();
+            loadPreferences();
+            checkApiKey();
+            loadDarkMode();
+
+            updateStats();
+            showSection('generator');
+
+            initMobileBottomNav();
+            initSwipeGestures();
+            initQualityOfLife();
+            initLock();
+        });
+
+        function initSelect2() {
+            // Initialize each select with the right dropdown parent (important inside modal)
+            document.querySelectorAll('select.select2-dropdown').forEach(sel => {
+                const $sel = $(sel);
+                const inSettings = $sel.closest('#settings-modal').length > 0;
+                const parent = inSettings ? $('#settings-modal') : $(document.body);
+
+                // Avoid double init
+                if ($sel.hasClass('select2-hidden-accessible')) return;
+
+                $sel.select2({
+                    width: '100%',
+                    dropdownAutoWidth: true,
+                    minimumResultsForSearch: 10,
+                    dropdownParent: parent
+                });
+            });
+        }
+
+        // Delegated events for mobile footer
+        function initMobileBottomNav() {
+            const nav = document.getElementById('mobile-bottom-nav');
+            if (!nav) return;
+            nav.addEventListener('click', (e) => {
+                const btn = e.target.closest('.mobile-nav-btn');
+                if (!btn) return;
+                const section = btn.getAttribute('data-section');
+                if (!section) return;
+                showSection(section);
+            });
+        }
+
+        function initQualityOfLife() {
+            // Keyboard shortcut: Ctrl/Cmd + Enter to generate
+            document.addEventListener('keydown', (e) => {
+                const isMac = navigator.platform.toUpperCase().includes('MAC');
+                const mod = isMac ? e.metaKey : e.ctrlKey;
+                if (mod && e.key === 'Enter') {
+                    const generatorVisible = !document.getElementById('generator-section').classList.contains('hidden');
+                    if (generatorVisible) generateContent();
+                }
+            });
+
+            // Persist draft input
+            const input = document.getElementById('user-input');
+            if (input) {
+                const draft = localStorage.getItem('shutter_draft_input') || '';
+                if (!input.value && draft) {
+                    input.value = draft;
+                    updateCharCount();
+                }
+                input.addEventListener('input', () => {
+                    localStorage.setItem('shutter_draft_input', input.value);
+                });
+            }
+
+            // Char count init
+            updateCharCount();
+        }
+
+        // =====================
+        // SWIPE
+        // =====================
+        function initSwipeGestures() {
+            const mainContent = document.getElementById('main-content');
+            if (!mainContent) return;
+
+            let touchStartX = 0;
+            let touchStartY = 0;
+            let isDragging = false;
+            const minSwipeDistance = 80;
+            const maxVerticalDistance = 100;
+
+            function getActiveSectionEl() {
+                const id = `${SECTIONS[currentSectionIndex]}-section`;
+                return document.getElementById(id);
+            }
+
+            function resetDragStyles() {
+                const el = getActiveSectionEl();
+                if (!el) return;
+                el.classList.remove('section-dragging');
+                el.style.transform = '';
+                el.style.transition = '';
+            }
+
+            mainContent.addEventListener('touchstart', (e) => {
+                if (document.body.classList.contains('locked')) return;
+
+                const tag = e.target?.tagName?.toLowerCase();
+                if (['input', 'textarea', 'select', 'button'].includes(tag)) return;
+                if (e.target.closest('.select2-container')) return;
+
+                touchStartX = e.changedTouches[0].screenX;
+                touchStartY = e.changedTouches[0].screenY;
+                isDragging = true;
+
+                const el = getActiveSectionEl();
+                if (el) el.classList.add('section-dragging');
+            }, { passive: true });
+
+            mainContent.addEventListener('touchmove', (e) => {
+                if (!isDragging) return;
+
+                const currentX = e.changedTouches[0].screenX;
+                const currentY = e.changedTouches[0].screenY;
+                const diffX = currentX - touchStartX;
+                const diffY = Math.abs(currentY - touchStartY);
+
+                if (diffY >= maxVerticalDistance) {
+                    resetDragStyles();
+                    isDragging = false;
+                    document.querySelectorAll('.swipe-indicator').forEach(el => el.classList.remove('show'));
+                    return;
+                }
+
+                const el = getActiveSectionEl();
+                if (el) {
+                    const capped = Math.max(Math.min(diffX, 80), -80);
+                    el.style.transform = `translateX(${capped}px)`;
+                }
+
+                if (diffX > 40 && currentSectionIndex > 0) {
+                    document.querySelector('.swipe-indicator.left')?.classList.add('show');
+                    document.querySelector('.swipe-indicator.right')?.classList.remove('show');
+                } else if (diffX < -40 && currentSectionIndex < SECTIONS.length - 1) {
+                    document.querySelector('.swipe-indicator.right')?.classList.add('show');
+                    document.querySelector('.swipe-indicator.left')?.classList.remove('show');
+                } else {
+                    document.querySelectorAll('.swipe-indicator').forEach(el => el.classList.remove('show'));
+                }
+            }, { passive: true });
+
+            mainContent.addEventListener('touchend', (e) => {
+                if (!isDragging) return;
+                isDragging = false;
+
+                const touchEndX = e.changedTouches[0].screenX;
+                const touchEndY = e.changedTouches[0].screenY;
+                const diffX = touchEndX - touchStartX;
+                const diffY = Math.abs(touchEndY - touchStartY);
+
+                document.querySelectorAll('.swipe-indicator').forEach(el => el.classList.remove('show'));
+
+                if (Math.abs(diffX) > minSwipeDistance && diffY < maxVerticalDistance) {
+                    const currentEl = getActiveSectionEl();
+
+                    if (diffX > 0 && currentSectionIndex > 0) {
+                        if (currentEl) {
+                            currentEl.classList.remove('section-dragging');
+                            currentEl.classList.add('slide-out-right');
+                            setTimeout(() => currentEl.classList.remove('slide-out-right'), 260);
+                        }
+                        showSection(SECTIONS[currentSectionIndex - 1], 'right');
+                    } else if (diffX < 0 && currentSectionIndex < SECTIONS.length - 1) {
+                        if (currentEl) {
+                            currentEl.classList.remove('section-dragging');
+                            currentEl.classList.add('slide-out-left');
+                            setTimeout(() => currentEl.classList.remove('slide-out-left'), 260);
+                        }
+                        showSection(SECTIONS[currentSectionIndex + 1], 'left');
+                    } else {
+                        resetDragStyles();
+                    }
+                } else {
+                    const el = getActiveSectionEl();
+                    if (el) {
+                        el.classList.remove('section-dragging');
+                        el.style.transition = 'transform 0.15s ease-out';
+                        el.style.transform = 'translateX(0px)';
+                        setTimeout(() => {
+                            el.style.transition = '';
+                            el.style.transform = '';
+                        }, 170);
+                    }
+                }
+            }, { passive: true });
+        }
+
+        // =====================
+        // LANGUAGE
+        // =====================
+        function loadLanguage() {
+            currentLang = localStorage.getItem('shutter_language') || 'id';
+            // Update direction
+            document.documentElement.dir = currentLang === 'ar' ? 'rtl' : 'ltr';
+
+            // Update select2 value if initialized
+            const langSel = document.getElementById('language-select');
+            if (langSel) {
+                $(langSel).val(currentLang).trigger('change.select2');
+            }
+            applyTranslations();
+        }
+
+        function changeLanguage() {
+            currentLang = document.getElementById('language-select').value;
+            localStorage.setItem('shutter_language', currentLang);
+            document.documentElement.dir = currentLang === 'ar' ? 'rtl' : 'ltr';
+            applyTranslations();
+        }
+
+        function applyTranslations() {
+            const dict = TRANSLATIONS[currentLang] || TRANSLATIONS.id;
+
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (dict[key]) el.textContent = dict[key];
+            });
+
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-i18n-placeholder');
+                if (dict[key]) el.placeholder = dict[key];
+            });
+
+            // Lock overlay dynamic texts
+            syncLockOverlayTexts();
+            updateCharCount();
+        }
+
+        // =====================
+        // DARK MODE
+        // =====================
+        function loadDarkMode() {
+            const isDark = localStorage.getItem('shutter_dark_mode') === 'true';
+            if (isDark) {
+                document.documentElement.classList.add('dark');
+                document.body.classList.add('dark');
+                updateDarkModeIcon(true);
+            }
+        }
+
+        function toggleDarkMode() {
+            const isDark = document.documentElement.classList.toggle('dark');
+            document.body.classList.toggle('dark');
+            localStorage.setItem('shutter_dark_mode', isDark);
+            updateDarkModeIcon(isDark);
+        }
+
+        function updateDarkModeIcon(isDark) {
+            const icon = isDark ? 'fa-sun' : 'fa-moon';
+            document.getElementById('dark-mode-icon').className = `fa-solid ${icon}`;
+            const mobileIcon = document.getElementById('dark-mode-icon-mobile');
+            if (mobileIcon) mobileIcon.className = `fa-solid ${icon}`;
+        }
+
+        // =====================
+        // UI
+        // =====================
+        function showSection(sectionId, direction = null) {
+            const newIndex = SECTIONS.indexOf(sectionId);
+            if (newIndex === -1) return;
+
+            // ALWAYS reset transforms to avoid stuck swipe offset
+            document.querySelectorAll('.section-content').forEach(s => {
+                s.classList.remove('section-dragging', 'slide-in-left', 'slide-in-right', 'slide-out-left', 'slide-out-right');
+                s.style.transform = '';
+                s.style.transition = '';
+            });
+
+            document.querySelectorAll('.section-content').forEach(s => s.classList.add('hidden'));
+
+            const targetSection = document.getElementById(`${sectionId}-section`);
+            if (targetSection) {
+                targetSection.classList.remove('hidden');
+                if (direction === 'left') targetSection.classList.add('slide-in-left');
+                if (direction === 'right') targetSection.classList.add('slide-in-right');
+            }
+
+            currentSectionIndex = newIndex;
+
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('text-emerald-600', 'font-semibold');
+                btn.classList.add('text-gray-600');
+            });
+
+            document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
+                btn.classList.remove('active', 'text-emerald-600');
+                btn.classList.add('text-gray-500');
+            });
+
+            const desktopBtn = document.getElementById(`nav-${sectionId}`);
+            if (desktopBtn) {
+                desktopBtn.classList.add('text-emerald-600', 'font-semibold');
+                desktopBtn.classList.remove('text-gray-600');
+            }
+
+            document.querySelectorAll(`.mobile-nav-btn[data-section="${sectionId}"]`).forEach(btn => {
+                btn.classList.add('active', 'text-emerald-600');
+                btn.classList.remove('text-gray-500');
+            });
+
+            if (sectionId === 'library') {
+                // Refresh both counts and current tab contents
+                refreshLibraryCounts();
+                renderLibrary();
+            }
+            if (sectionId === 'editor') {
+                initEditorOnce();
+            }
+            if (sectionId === 'stats') updateStats();
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function populateCategories() {
+            const selects = [document.getElementById('category-select'), document.getElementById('default-category')];
+            const sortedCats = [...CATEGORIES].sort();
+
+            selects.forEach(select => {
+                if (!select) return;
+                while (select.options.length > 1) select.remove(1);
+                sortedCats.forEach(cat => {
+                    const option = document.createElement('option');
+                    option.value = cat;
+                    option.textContent = cat;
+                    select.appendChild(option);
+                });
+            });
+        }
+
+        function populateTemplates() {
+            const grid = document.getElementById('templates-grid');
+            if (!grid) return;
+            grid.innerHTML = '';
+
+            TEMPLATES.forEach(template => {
+                const card = document.createElement('div');
+                card.className = "touch-card bg-white p-4 rounded-xl shadow-md border border-gray-100 hover:border-emerald-300 hover:shadow-lg transition";
+                card.onclick = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    useTemplate(template);
+                };
+                card.innerHTML = `
+                    <div class="flex items-center gap-3 pointer-events-none">
+                        <span class="text-2xl">${template.icon}</span>
+                        <div>
+                            <h4 class="font-semibold text-gray-800">${template.name}</h4>
+                            <p class="text-xs text-gray-400">${template.category}</p>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function useTemplate(template) {
+            document.getElementById('user-input').value = template.prompt;
+            $('#category-select').val(template.category).trigger('change');
+            updateCharCount();
+            showSection('generator');
+            showToast(`Template "${template.name}" dimuat`, 'success');
+        }
+
+        function getCategoryPool() {
+            const pool = localStorage.getItem('shutter_category_pool') || 'trending';
+            return pool === 'all' ? CATEGORIES : TRENDING_CATEGORIES;
+        }
+
+        function randomCategory() {
+            const pool = getCategoryPool();
+            const randomIndex = Math.floor(Math.random() * pool.length);
+            $('#category-select').val(pool[randomIndex]).trigger('change');
+            showToast(`Terpilih: ${pool[randomIndex]}`, 'info');
+        }
+
+        function clearInput() {
+            document.getElementById('user-input').value = '';
+            updateCharCount();
+            localStorage.setItem('shutter_draft_input', '');
+        }
+
+        function updateCharCount() {
+            const input = document.getElementById('user-input');
+            const counter = document.getElementById('char-count');
+            if (!input || !counter) return;
+            counter.textContent = `${input.value.length} ${t('chars')}`;
+        }
+        document.getElementById('user-input')?.addEventListener('input', updateCharCount);
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const icon = document.getElementById('toast-icon');
+            const msg = document.getElementById('toast-message');
+
+            const icons = {
+                success: 'fa-check-circle text-green-400',
+                error: 'fa-exclamation-circle text-red-400',
+                info: 'fa-info-circle text-blue-400'
+            };
+
+            icon.className = `fa-solid ${icons[type] || icons.success}`;
+            msg.textContent = message;
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0'), 2600);
+        }
+
+        // =====================
+        // SETTINGS
+        // =====================
+        function openSettings() {
+            document.getElementById('settings-modal').classList.remove('hidden');
+            loadSettings();
+        }
+
+        function closeSettings() {
+            document.getElementById('settings-modal').classList.add('hidden');
+        }
+
+        function toggleProviderFields() {
+            const provider = document.getElementById('ai-provider').value;
+            document.getElementById('gemini-field').classList.toggle('hidden', provider !== 'gemini');
+            document.getElementById('openai-field').classList.toggle('hidden', provider !== 'openai');
+            document.getElementById('gemini-model-field').classList.toggle('hidden', provider !== 'gemini');
+            document.getElementById('openai-model-field').classList.toggle('hidden', provider !== 'openai');
+
+            // Ensure select2 dropdownParent keeps working
+            initSelect2();
+        }
+
+        function saveSettings() {
+            const provider = document.getElementById('ai-provider').value;
+            const geminiKey = document.getElementById('gemini-key').value;
+            const openaiKey = document.getElementById('openai-key').value;
+            const defaultCat = document.getElementById('default-category').value;
+            const defaultAspect = document.getElementById('default-aspect').value;
+            const defaultStyle = document.getElementById('default-style').value;
+            const language = document.getElementById('language-select').value;
+            const pool = document.getElementById('category-pool').value;
+            const geminiModel = document.getElementById('gemini-model').value;
+            const openaiModel = document.getElementById('openai-model').value;
+
+            localStorage.setItem('shutter_provider', provider);
+            localStorage.setItem('shutter_gemini_key', geminiKey);
+            localStorage.setItem('shutter_openai_key', openaiKey);
+            localStorage.setItem('shutter_default_category', defaultCat);
+            localStorage.setItem('shutter_default_aspect', defaultAspect);
+            localStorage.setItem('shutter_default_style', defaultStyle);
+            localStorage.setItem('shutter_language', language);
+            localStorage.setItem('shutter_category_pool', pool);
+            localStorage.setItem('shutter_gemini_model', geminiModel);
+            localStorage.setItem('shutter_openai_model', openaiModel);
+
+            // lock state is saved live (toggle), so no need here.
+
+            closeSettings();
+            checkApiKey();
+            loadPreferences();
+            changeLanguage();
+            showToast(t('toast_settings_saved'), 'success');
+        }
+
+        function loadSettings() {
+            const provider = localStorage.getItem('shutter_provider') || 'gemini';
+            const geminiKey = localStorage.getItem('shutter_gemini_key') || '';
+            const openaiKey = localStorage.getItem('shutter_openai_key') || '';
+            const defaultCat = localStorage.getItem('shutter_default_category') || '';
+            const defaultAspect = localStorage.getItem('shutter_default_aspect') || '--ar 3:2';
+            const defaultStyle = localStorage.getItem('shutter_default_style') || 'photorealistic';
+            const pool = localStorage.getItem('shutter_category_pool') || 'trending';
+            const geminiModel = localStorage.getItem('shutter_gemini_model') || 'gemini-1.5-flash';
+            const openaiModel = localStorage.getItem('shutter_openai_model') || 'gpt-4o-mini';
+
+            $('#ai-provider').val(provider).trigger('change');
+            $('#gemini-model').val(geminiModel).trigger('change');
+            $('#openai-model').val(openaiModel).trigger('change');
+            $('#category-pool').val(pool).trigger('change');
+
+            document.getElementById('gemini-key').value = geminiKey;
+            document.getElementById('openai-key').value = openaiKey;
+
+            $('#default-category').val(defaultCat).trigger('change');
+            $('#default-aspect').val(defaultAspect).trigger('change');
+            $('#default-style').val(defaultStyle).trigger('change');
+
+            // lock
+            syncLockToggleFromStorage();
+
+            toggleProviderFields();
+        }
+
+        function loadPreferences() {
+            const defaultCat = localStorage.getItem('shutter_default_category');
+            const defaultAspect = localStorage.getItem('shutter_default_aspect');
+            const defaultStyle = localStorage.getItem('shutter_default_style');
+
+            if (defaultCat) $('#category-select').val(defaultCat).trigger('change');
+            if (defaultAspect) $('#aspect-ratio').val(defaultAspect).trigger('change');
+            if (defaultStyle) $('#style-preset').val(defaultStyle).trigger('change');
+        }
+
+        function checkApiKey() {
+            const provider = localStorage.getItem('shutter_provider') || 'gemini';
+            const key = provider === 'gemini'
+                ? localStorage.getItem('shutter_gemini_key')
+                : localStorage.getItem('shutter_openai_key');
+
+            const warning = document.getElementById('api-warning');
+            warning.classList.toggle('hidden', !!key);
+            return !!key;
+        }
+
+        function resetAllData() {
+            if (confirm('Ini akan menghapus SEMUA data termasuk riwayat, favorit, dan pengaturan. Lanjutkan?')) {
+                localStorage.clear();
+                location.reload();
+            }
+        }
+
+        // =====================
+        // AI SAFETY SCRUB
+        // =====================
+        function enforceSafety(resultJson) {
+            if (!resultJson) return resultJson;
+
+            const hardNegative = "no people, no human, no person, no face, no portrait, no head, no skin, no eyes, no mouth, no nose, no lips, no hands, no body, no silhouette, no animal, no bird, no insect, no living creature, no character, no doll";
+
+            const bannedTokens = [
+                'face', 'faces', 'portrait', 'portraits', 'selfie', 'headshot', 'person', 'people', 'human', 'man', 'woman', 'boy', 'girl', 'child', 'baby',
+                'model', 'hands', 'hand', 'skin', 'eye', 'eyes', 'mouth', 'nose', 'lips', 'teeth',
+                'animal', 'animals', 'cat', 'dog', 'horse', 'bird', 'birds', 'fish', 'insect', 'butterfly',
+                'character', '人物', '顔',
+                // also scrub scripture keywords as requested
+                'quran', 'koran', 'al-quran', 'quranic', 'scripture', 'bismillah', 'allah', 'muhammad', 'sura', 'surah', 'hadith',
+                'calligraphy', 'kaligrafi'
+            ];
+
+            function scrubText(s) {
+                if (!s || typeof s !== 'string') return s;
+                let out = s;
+                bannedTokens.forEach(tok => {
+                    const re = new RegExp(`\\b${tok}\\b`, 'gi');
+                    out = out.replace(re, '');
+                });
+                out = out.replace(/\s{2,}/g, ' ').trim();
+                return out;
+            }
+
+            resultJson.ai_prompt = scrubText(resultJson.ai_prompt || '');
+            resultJson.title = scrubText(resultJson.title || '');
+            resultJson.description = scrubText(resultJson.description || '');
+
+            if (Array.isArray(resultJson.keywords)) {
+                resultJson.keywords = resultJson.keywords
+                    .map(k => (typeof k === 'string' ? k.trim() : ''))
+                    .filter(Boolean)
+                    .filter(k => !bannedTokens.some(tok => new RegExp(`\\b${tok}\\b`, 'i').test(k)))
+                    .slice(0, 50);
+            }
+
+            const safePad = [
+                'still life', 'no people', 'background', 'copy space', 'texture', 'pattern', 'minimal', 'modern', 'clean', 'detail',
+                'high resolution', 'studio lighting', 'soft light', 'macro', 'flat lay', 'top view', 'composition', 'design', 'abstract', 'architecture'
+            ];
+            if (Array.isArray(resultJson.keywords)) {
+                let i = 0;
+                while (resultJson.keywords.length < 50 && i < safePad.length) {
+                    if (!resultJson.keywords.includes(safePad[i])) resultJson.keywords.push(safePad[i]);
+                    i++;
+                }
+                let j = 0;
+                while (resultJson.keywords.length < 50) {
+                    resultJson.keywords.push(`stock ${j + 1}`);
+                    j++;
+                }
+                resultJson.keywords = resultJson.keywords.slice(0, 50);
+            }
+
+            if (typeof resultJson.ai_prompt === 'string') {
+                const p = resultJson.ai_prompt;
+                const hasNoPeople = /no\s+people|no\s+face|no\s+faces|no\s+human/i.test(p);
+                const tail = `${hasNoPeople ? '' : ', '}${hardNegative}`;
+                resultJson.ai_prompt = (p + tail).replace(/\s{2,}/g, ' ').trim();
+            }
+
+            return resultJson;
+        }
+
+        // =====================
+        // AI GENERATION
+        // =====================
+        async function magicEnhance() {
+            if (!checkApiKey()) { openSettings(); return; }
+
+            const input = document.getElementById('user-input');
+            const originalText = input.value.trim();
+            if (!originalText) { showToast("Ketik sesuatu terlebih dahulu!", 'error'); return; }
+
+            const btn = document.getElementById('magic-btn');
+            const originalIcon = btn.innerHTML;
+            btn.innerHTML = '<div class="loader" style="width:16px;height:16px;"></div>';
+            btn.disabled = true;
+
+            try {
+                const prompt = `
+${CONTENT_FILTER}
+
+Enhance this concept into a detailed, vivid visual description for a professional stock photo (max 60 words).
+IMPORTANT: The result must NOT contain any human faces, human figures, animal faces, or animal figures.
+Avoid religious texts or scripture content. Prefer abstract ornaments.
+
+Input: "${originalText}"
+
+Output only the enhanced description in English, nothing else.
+                `.trim();
+
+                let enhancedText = await callAI(prompt, true);
+                enhancedText = (enforceSafety({ ai_prompt: enhancedText }).ai_prompt || '').trim();
+
+                input.value = '';
+                let i = 0;
+                const typeInterval = setInterval(() => {
+                    input.value += enhancedText.charAt(i);
+                    i++;
+                    updateCharCount();
+                    if (i >= enhancedText.length) clearInterval(typeInterval);
+                }, 10);
+
+                showToast(t('toast_enhanced'), 'success');
+            } catch (error) {
+                showToast(t('toast_error') + ": " + error.message, 'error');
+            } finally {
+                btn.innerHTML = originalIcon;
+                btn.disabled = false;
+            }
+        }
+
+        async function generateContent() {
+            if (!checkApiKey()) { openSettings(); return; }
+
+            let category = $('#category-select').val();
+            const userInput = document.getElementById('user-input').value.trim();
+            const aspectRatio = $('#aspect-ratio').val();
+            const stylePreset = $('#style-preset').val();
+
+            if (!category) {
+                const pool = getCategoryPool();
+                category = pool[Math.floor(Math.random() * pool.length)];
+                $('#category-select').val(category).trigger('change');
+            }
+
+            if (!userInput) { showToast("Silakan deskripsikan apa yang ingin Anda buat.", 'error'); return; }
+
+            const btn = document.getElementById('generate-btn');
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = '<div class="loader mr-2"></div> Generating...';
+            btn.disabled = true;
+
+            const styleDescriptions = {
+                'photorealistic': 'ultra photorealistic, shot on Canon EOS R5, 85mm lens, f/1.8',
+                'cinematic': 'cinematic lighting, anamorphic lens flare, movie still, dramatic',
+                'editorial': 'editorial photography style, magazine quality, professional lighting',
+                'minimalist': 'minimalist composition, clean lines, negative space, simple',
+                'vibrant': 'vibrant saturated colors, high contrast, punchy, dynamic',
+                'moody': 'moody atmosphere, dark tones, dramatic shadows, emotional',
+                'vintage': 'vintage film grain, retro color grading, nostalgic feel',
+                'illustration': 'digital illustration style, artistic, stylized',
+                '3d-render': '3D render, octane render, CGI, realistic materials',
+                'aerial': 'aerial drone photography, bird eye view, DJI Mavic',
+                'watercolor': 'watercolor painting style, soft edges, artistic brushstrokes',
+                'flat-design': 'flat design, vector style, clean geometric shapes, modern'
+            };
+
+            const systemPrompt = `
+Role: Expert Stock Photography Metadata Specialist for Shutterstock, Adobe Stock, Getty Images.
+Task: Generate complete metadata and AI generation prompt.
+
+${CONTENT_FILTER}
+
+VERY IMPORTANT RULES:
+- Output MUST be in ENGLISH (metadata + prompt)
+- The generated prompt MUST NOT contain any human faces, human figures, portraits, or people showing their faces
+- The generated prompt MUST NOT contain any animal faces or animal figures
+- If the user input mentions people or animals, REINTERPRET it to show:
+  * ONLY silhouettes from behind/shadows from far away OR empty environments and objects
+  * Replace animals with objects/landscapes/patterns instead
+- Avoid religious texts or sacred scripture content. Prefer abstract ornamental geometry.
+
+Input: "${userInput}"
+Category: "${category}"
+Style: "${styleDescriptions[stylePreset] || 'photorealistic'}"
+Aspect Ratio: "${aspectRatio}"
+
+Output JSON format:
+{
+  "ai_prompt": "Detailed prompt for Midjourney/Stable Diffusion. MUST NOT include any faces or living beings. Include subject (objects/landscape/architecture only), environment, lighting, camera angle, technical specs. End with: no people, no faces, no animals, no living beings. Style: ${styleDescriptions[stylePreset]}. End with ${aspectRatio}",
+  "title": "Commercial descriptive title for stock (max 120 chars)",
+  "description": "Detailed scene description for stock metadata (max 200 chars)",
+  "categories": ["Primary Category", "Secondary Category"],
+  "keywords": ["keyword1", "keyword2", ... exactly 50 relevant high-volume search keywords]
+}
+
+Output valid JSON only.
+            `.trim();
+
+            try {
+                let resultJson = await callAI(systemPrompt, false);
+                resultJson = enforceSafety(resultJson);
+
+                currentResult = {
+                    ...resultJson,
+                    input: userInput,
+                    category,
+                    aspectRatio,
+                    stylePreset
+                };
+                currentIsFavorite = false;
+
+                displayResults(resultJson);
+                saveToHistory(resultJson, userInput, category, aspectRatio, stylePreset);
+                trackGeneration(category);
+
+                document.getElementById('results-area').scrollIntoView({ behavior: 'smooth' });
+                showToast(t('toast_generated'), 'success');
+            } catch (error) {
+                showToast(t('toast_error') + ": " + error.message, 'error');
+                console.error(error);
+            } finally {
+                btn.innerHTML = originalContent;
+                btn.disabled = false;
+            }
+        }
+
+        function regenerateContent() {
+            generateContent();
+        }
+
+        async function callAI(promptText, isRawText = false) {
+            const provider = localStorage.getItem('shutter_provider') || 'gemini';
+            return provider === 'gemini'
+                ? await callGemini(promptText, isRawText)
+                : await callOpenAI(promptText, isRawText);
+        }
+
+        async function callGemini(promptText, isRawText) {
+            const apiKey = localStorage.getItem('shutter_gemini_key');
+            const model = localStorage.getItem('shutter_gemini_model') || 'gemini-1.5-flash';
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
+            });
+
+            const data = await response.json();
+            if (data.error) throw new Error(data.error.message);
+
+            const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+            if (isRawText) return text.trim();
+
+            const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
+            return JSON.parse(jsonStr);
+        }
+
+        async function callOpenAI(promptText, isRawText) {
+            const apiKey = localStorage.getItem('shutter_openai_key');
+            const model = localStorage.getItem('shutter_openai_model') || 'gpt-4o-mini';
+
+            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`
+                },
+                body: JSON.stringify({
+                    model,
+                    messages: [
+                        { role: "system", content: isRawText ? "You are a helpful assistant." : "You output valid JSON only." },
+                        { role: "user", content: promptText }
+                    ]
+                })
+            });
+
+            const data = await response.json();
+            if (data.error) throw new Error(data.error.message);
+
+            const text = data.choices?.[0]?.message?.content || '';
+            if (isRawText) return text.trim();
+
+            const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
+            return JSON.parse(jsonStr);
+        }
+
+        function displayResults(data) {
+            document.getElementById('results-area').classList.remove('hidden');
+
+            document.getElementById('result-prompt').textContent = data.ai_prompt;
+            document.getElementById('result-title').textContent = data.title;
+            document.getElementById('result-description').textContent = data.description;
+
+            const cats = Array.isArray(data.categories) ? data.categories.join(', ') : data.categories;
+            document.getElementById('result-categories').textContent = cats;
+
+            let tags = data.keywords;
+            if (typeof tags === 'string') tags = tags.split(',').map(t => t.trim());
+
+            const tagsContainer = document.getElementById('result-tags');
+            tagsContainer.innerHTML = '';
+            document.getElementById('result-tags-raw').value = tags.join(', ');
+            document.getElementById('keyword-count').textContent = `(${tags.length})`;
+
+            tags.forEach(tag => {
+                const span = document.createElement('span');
+                span.className = "bg-white border border-gray-200 text-gray-600 px-2 py-1 rounded text-xs hover:bg-emerald-50 hover:border-emerald-200 cursor-pointer transition";
+                span.textContent = tag;
+                span.onclick = () => {
+                    navigator.clipboard.writeText(tag);
+                    showToast(`Disalin: ${tag}`, 'success');
+                };
+                tagsContainer.appendChild(span);
+            });
+
+            updateFavoriteButton(false);
+        }
+
+        function copyToClipboard(elementId) {
+            const text = elementId === 'result-tags'
+                ? document.getElementById('result-tags-raw').value
+                : document.getElementById(elementId).innerText;
+
+            navigator.clipboard.writeText(text)
+                .then(() => showToast(t('toast_copied'), 'success'))
+                .catch(() => showToast('Gagal menyalin', 'error'));
+        }
+
+        function copyAllMetadata() {
+            const prompt = document.getElementById('result-prompt').innerText;
+            const title = document.getElementById('result-title').innerText;
+            const description = document.getElementById('result-description').innerText;
+            const categories = document.getElementById('result-categories').innerText;
+            const keywords = document.getElementById('result-tags-raw').value;
+
+            const allText = `=== AI PROMPT ===\n${prompt}\n\n=== TITLE ===\n${title}\n\n=== DESCRIPTION ===\n${description}\n\n=== CATEGORIES ===\n${categories}\n\n=== KEYWORDS ===\n${keywords}`;
+
+            navigator.clipboard.writeText(allText)
+                .then(() => showToast('Semua metadata disalin!', 'success'))
+                .catch(() => showToast('Gagal menyalin', 'error'));
+        }
+
+        // =====================
+        // FAVORITES
+        // =====================
+        function toggleFavorite() {
+            if (!currentResult) return;
+
+            const favorites = JSON.parse(localStorage.getItem('shutter_favorites') || '[]');
+
+            if (currentIsFavorite) {
+                const index = favorites.findIndex(f => f.id === currentResult.id);
+                if (index > -1) favorites.splice(index, 1);
+                currentIsFavorite = false;
+                showToast(t('toast_removed'), 'info');
+            } else {
+                currentResult.id = currentResult.id || Date.now();
+                currentResult.timestamp = new Date().toLocaleString();
+                favorites.unshift(currentResult);
+                currentIsFavorite = true;
+                showToast(t('toast_saved'), 'success');
+            }
+
+            localStorage.setItem('shutter_favorites', JSON.stringify(favorites));
+            updateFavoriteButton(currentIsFavorite);
+        }
+
+        function updateFavoriteButton(isFav) {
+            const icon = document.getElementById('fav-icon');
+            const text = document.getElementById('fav-text');
+
+            if (isFav) {
+                icon.className = 'fa-solid fa-heart text-pink-500';
+                text.textContent = 'Tersimpan';
+            } else {
+                icon.className = 'fa-regular fa-heart';
+                text.textContent = t('btn_save');
+            }
+        }
+
+        function loadFavorites() {
+            const favorites = JSON.parse(localStorage.getItem('shutter_favorites') || '[]');
+            const list = document.getElementById('favorites-list');
+            document.getElementById('fav-count').textContent = `(${favorites.length})`;
+
+            if (favorites.length === 0) {
+                list.innerHTML = `<div class="text-center text-gray-500 py-10">${t('favorites_empty')}</div>`;
+                return;
+            }
+
+            list.innerHTML = '';
+            favorites.forEach(item => {
+                const card = document.createElement('div');
+                card.className = "touch-card bg-white p-4 rounded-xl shadow-md border border-gray-100";
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <div class="flex-1 min-w-0 cursor-pointer" data-action="load" data-id="${item.id}">
+                            <span class="text-xs font-bold text-pink-500 uppercase">${item.category}</span>
+                            <h4 class="font-bold text-gray-800 truncate">${item.input}</h4>
+                            <p class="text-xs text-gray-400">${item.timestamp || ''}</p>
+                        </div>
+                        <div class="flex gap-2 ml-2">
+                            <button class="text-blue-500 hover:text-blue-700 text-sm px-3 py-2 bg-blue-50 rounded min-h-[44px]" data-action="load-btn" data-id="${item.id}">${t('btn_load')}</button>
+                            <button class="text-red-500 hover:text-red-700 text-sm px-3 py-2 bg-red-50 rounded min-h-[44px]" data-action="delete" data-id="${item.id}">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="text-xs text-gray-500 bg-gray-50 p-2 rounded truncate cursor-pointer" data-action="load" data-id="${item.id}">${item.ai_prompt}</div>
+                `;
+
+                card.querySelectorAll('[data-action="load"], [data-action="load-btn"]').forEach(el => {
+                    el.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        loadFavorite(parseInt(el.dataset.id));
+                    });
+                });
+
+                card.querySelectorAll('[data-action="delete"]').forEach(el => {
+                    el.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        removeFavorite(parseInt(el.dataset.id));
+                    });
+                });
+
+                list.appendChild(card);
+            });
+        }
+
+        function loadFavorite(id) {
+            const favorites = JSON.parse(localStorage.getItem('shutter_favorites') || '[]');
+            const item = favorites.find(f => f.id === id);
+            if (item) {
+                document.getElementById('user-input').value = item.input;
+                $('#category-select').val(item.category).trigger('change');
+                if (item.aspectRatio) $('#aspect-ratio').val(item.aspectRatio).trigger('change');
+                if (item.stylePreset) $('#style-preset').val(item.stylePreset).trigger('change');
+
+                currentResult = item;
+                currentIsFavorite = true;
+                displayResults(item);
+                updateFavoriteButton(true);
+
+                showSection('generator');
+                showToast('Favorit dimuat', 'success');
+            }
+        }
+
+        function removeFavorite(id) {
+            let favorites = JSON.parse(localStorage.getItem('shutter_favorites') || '[]');
+            favorites = favorites.filter(f => f.id !== id);
+            localStorage.setItem('shutter_favorites', JSON.stringify(favorites));
+            loadFavorites();
+            showToast(t('toast_removed'), 'info');
+        }
+
+        function clearAllFavorites() {
+            if (confirm('Hapus semua favorit?')) {
+                localStorage.setItem('shutter_favorites', '[]');
+                loadFavorites();
+                showToast('Semua favorit dihapus', 'info');
+            }
+        }
+
+        // =====================
+        // HISTORY
+        // =====================
+        function saveToHistory(data, input, category, aspectRatio, stylePreset) {
+            const history = JSON.parse(localStorage.getItem('shutter_history') || '[]');
+            const newItem = {
+                id: Date.now(),
+                input, category, aspectRatio, stylePreset,
+                data,
+                timestamp: new Date().toLocaleString(),
+                date: new Date().toISOString().split('T')[0]
+            };
+            history.unshift(newItem);
+            if (history.length > 100) history.pop();
+            localStorage.setItem('shutter_history', JSON.stringify(history));
+        }
+
+        function loadHistory() {
+            const history = JSON.parse(localStorage.getItem('shutter_history') || '[]');
+            const list = document.getElementById('history-list');
+            document.getElementById('history-count').textContent = `(${history.length})`;
+
+            if (history.length === 0) {
+                list.innerHTML = `<div class="text-center text-gray-500 py-10">${t('history_empty')}</div>`;
+                return;
+            }
+
+            const searchTerm = (document.getElementById('history-search')?.value || '').toLowerCase();
+            const filtered = searchTerm
+                ? history.filter(h => h.input.toLowerCase().includes(searchTerm) || h.category.toLowerCase().includes(searchTerm))
+                : history;
+
+            list.innerHTML = '';
+            filtered.forEach(item => {
+                const card = document.createElement('div');
+                card.className = "touch-card bg-white p-4 rounded-xl shadow-md border border-gray-100";
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <div class="flex-1 min-w-0 cursor-pointer" data-action="restore" data-id="${item.id}">
+                            <span class="text-xs font-bold text-emerald-600 uppercase">${item.category}</span>
+                            <h4 class="font-bold text-gray-800 truncate">${item.input}</h4>
+                            <p class="text-xs text-gray-400">${item.timestamp}</p>
+                        </div>
+                        <div class="flex gap-2 ml-2">
+                            <button class="text-blue-500 hover:text-blue-700 text-sm px-3 py-2 bg-blue-50 rounded min-h-[44px]" data-action="restore-btn" data-id="${item.id}">${t('btn_load')}</button>
+                            <button class="text-red-500 hover:text-red-700 text-sm px-3 py-2 bg-red-50 rounded min-h-[44px]" data-action="delete" data-id="${item.id}">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="text-xs text-gray-500 bg-gray-50 p-2 rounded truncate cursor-pointer" data-action="restore" data-id="${item.id}">${item.data.ai_prompt}</div>
+                `;
+
+                card.querySelectorAll('[data-action="restore"], [data-action="restore-btn"]').forEach(el => {
+                    el.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        restoreHistory(parseInt(el.dataset.id));
+                    });
+                });
+
+                card.querySelectorAll('[data-action="delete"]').forEach(el => {
+                    el.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        deleteHistoryItem(parseInt(el.dataset.id));
+                    });
+                });
+
+                list.appendChild(card);
+            });
+        }
+
+        function filterHistory() {
+            loadHistory();
+        }
+
+        function restoreHistory(id) {
+            const history = JSON.parse(localStorage.getItem('shutter_history') || '[]');
+            const item = history.find(i => i.id === id);
+            if (item) {
+                document.getElementById('user-input').value = item.input;
+                $('#category-select').val(item.category).trigger('change');
+                if (item.aspectRatio) $('#aspect-ratio').val(item.aspectRatio).trigger('change');
+                if (item.stylePreset) $('#style-preset').val(item.stylePreset).trigger('change');
+
+                currentResult = { ...item.data, ...item };
+                currentIsFavorite = false;
+                displayResults(item.data);
+
+                showSection('generator');
+                showToast('Riwayat dipulihkan', 'success');
+            }
+        }
+
+        function deleteHistoryItem(id) {
+            let history = JSON.parse(localStorage.getItem('shutter_history') || '[]');
+            history = history.filter(h => h.id !== id);
+            localStorage.setItem('shutter_history', JSON.stringify(history));
+            loadHistory();
+            showToast('Item dihapus', 'info');
+        }
+
+        function clearAllHistory() {
+            if (confirm('Hapus semua riwayat?')) {
+                localStorage.setItem('shutter_history', '[]');
+                loadHistory();
+                showToast('Riwayat dihapus', 'info');
+            }
+        }
+
+        // =====================
+        // EXPORT/IMPORT
+        // =====================
+        function exportData() {
+            const data = {
+                history: JSON.parse(localStorage.getItem('shutter_history') || '[]'),
+                favorites: JSON.parse(localStorage.getItem('shutter_favorites') || '[]'),
+                stats: JSON.parse(localStorage.getItem('shutter_stats') || '{}'),
+                exportDate: new Date().toISOString()
+            };
+
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `shutterprompt-backup-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            showToast('Data diekspor!', 'success');
+        }
+
+        function triggerImport() {
+            document.getElementById('import-file').click();
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+
+                    if (data.history) {
+                        const existing = JSON.parse(localStorage.getItem('shutter_history') || '[]');
+                        const merged = [...data.history, ...existing].slice(0, 100);
+                        localStorage.setItem('shutter_history', JSON.stringify(merged));
+                    }
+
+                    if (data.favorites) {
+                        const existing = JSON.parse(localStorage.getItem('shutter_favorites') || '[]');
+                        const merged = [...data.favorites, ...existing];
+                        localStorage.setItem('shutter_favorites', JSON.stringify(merged));
+                    }
+
+                    loadHistory();
+                    loadFavorites();
+                    updateStats();
+                    showToast('Data berhasil diimpor!', 'success');
+                } catch (err) {
+                    showToast('Format file tidak valid', 'error');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        // =====================
+        // STATS
+        // =====================
+        function trackGeneration(category) {
+            const stats = JSON.parse(localStorage.getItem('shutter_stats') || '{"total":0,"categories":{},"daily":{}}');
+            const today = new Date().toISOString().split('T')[0];
+
+            stats.total++;
+            stats.categories[category] = (stats.categories[category] || 0) + 1;
+            stats.daily[today] = (stats.daily[today] || 0) + 1;
+            stats.lastGenerated = today;
+
+            localStorage.setItem('shutter_stats', JSON.stringify(stats));
+        }
+
+        function updateStats() {
+            const stats = JSON.parse(localStorage.getItem('shutter_stats') || '{"total":0,"categories":{},"daily":{}}');
+            const favorites = JSON.parse(localStorage.getItem('shutter_favorites') || '[]');
+            const today = new Date().toISOString().split('T')[0];
+
+            document.getElementById('stat-total').textContent = stats.total || 0;
+            document.getElementById('stat-favorites').textContent = favorites.length;
+            document.getElementById('stat-today').textContent = stats.daily[today] || 0;
+
+            let streak = 0;
+            let checkDate = new Date();
+            while (stats.daily[checkDate.toISOString().split('T')[0]]) {
+                streak++;
+                checkDate.setDate(checkDate.getDate() - 1);
+            }
+            document.getElementById('stat-streak').textContent = streak;
+
+            const topCats = Object.entries(stats.categories || {})
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5);
+
+            const topCatsContainer = document.getElementById('top-categories');
+            if (topCats.length === 0) {
+                topCatsContainer.innerHTML = `<p class="text-gray-400 text-sm">${t('stats_no_data')}</p>`;
+            } else {
+                const maxCount = topCats[0][1];
+                topCatsContainer.innerHTML = topCats.map(([cat, count]) => `
+                    <div class="flex items-center gap-3">
+                        <span class="w-24 text-sm text-gray-600 truncate">${cat}</span>
+                        <div class="flex-1 bg-gray-200 rounded-full h-2">
+                            <div class="bg-gradient-to-r from-emerald-500 to-teal-500 h-2 rounded-full" style="width: ${(count / maxCount) * 100}%"></div>
+                        </div>
+                        <span class="text-sm font-medium text-gray-700">${count}</span>
+                    </div>
+                `).join('');
+            }
+
+            const weeklyContainer = document.getElementById('weekly-activity');
+            const days = [];
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                days.push(d.toISOString().split('T')[0]);
+            }
+
+            const weeklyData = days.map(d => stats.daily[d] || 0);
+            const maxDaily = Math.max(...weeklyData, 1);
+
+            weeklyContainer.innerHTML = weeklyData.map(count => `
+                <div class="flex-1 flex flex-col items-center">
+                    <div class="w-full bg-gray-200 rounded-t" style="height: ${Math.max((count / maxDaily) * 80, 4)}px; background: ${count > 0 ? 'linear-gradient(to top, #10b981, #14b8a6)' : '#e5e7eb'}"></div>
+                    <span class="text-xs text-gray-500 mt-1">${count}</span>
+                </div>
+            `).join('');
+        }
+
+        // =====================
+        // APP LOCK (PATTERN)
+        // =====================
+        const LOCK_KEYS = {
+            enabled: 'shutter_lock_enabled',
+            pattern: 'shutter_lock_pattern'
+        };
+
+        let lockMode = 'unlock'; // 'unlock' | 'setup' | 'confirm'
+        let pendingPattern = null;
+        let drawnPattern = [];
+        let isDrawing = false;
+
+        function initLock() {
+            // Wire toggle click reliably (some browsers with sr-only need explicit)
+            const checkbox = document.getElementById('lock-enabled');
+            if (checkbox) {
+                checkbox.addEventListener('change', () => {
+                    toggleLockEnabled(checkbox.checked);
+                });
+            }
+
+            // Setup pattern drawing listeners
+            initPatternCanvas();
+
+            // Reflect saved state
+            syncLockToggleFromStorage();
+
+            // Auto-lock if enabled and pattern exists
+            const enabled = localStorage.getItem(LOCK_KEYS.enabled) === 'true';
+            const pattern = localStorage.getItem(LOCK_KEYS.pattern);
+            if (enabled && pattern) {
+                lockApp();
+            }
+        }
+
+        function syncLockToggleFromStorage() {
+            const enabled = localStorage.getItem(LOCK_KEYS.enabled) === 'true';
+            const checkbox = document.getElementById('lock-enabled');
+            if (checkbox) checkbox.checked = enabled;
+            updateLockToggleUI(enabled);
+        }
+
+        function updateLockToggleUI(enabled) {
+            const track = document.getElementById('lock-toggle-track');
+            const dot = document.getElementById('lock-toggle-dot');
+            if (!track || !dot) return;
+            track.classList.toggle('on', enabled);
+            dot.classList.toggle('on', enabled);
+        }
+
+        function toggleLockEnabled(enabled) {
+            localStorage.setItem(LOCK_KEYS.enabled, enabled ? 'true' : 'false');
+            updateLockToggleUI(enabled);
+
+            if (!enabled) {
+                // disabling also unlocks
+                closeLockOverlay(true);
+                showToast(t('lock_disabled_toast'), 'info');
+                return;
+            }
+
+            // enabling requires a pattern
+            const pattern = localStorage.getItem(LOCK_KEYS.pattern);
+            if (!pattern) {
+                // Open setup overlay above settings modal
+                openPatternSetup();
+            } else {
+                showToast(t('lock_enabled_toast'), 'success');
+            }
+        }
+
+        function lockApp() {
+            document.body.classList.add('locked');
+            openLockOverlay('unlock', true);
+            showToast(t('lock_locked'), 'info');
+        }
+
+        function lockNow() {
+            const enabled = localStorage.getItem(LOCK_KEYS.enabled) === 'true';
+            const pattern = localStorage.getItem(LOCK_KEYS.pattern);
+            if (!enabled) {
+                // enable quickly
+                const checkbox = document.getElementById('lock-enabled');
+                if (checkbox) {
+                    checkbox.checked = true;
+                    toggleLockEnabled(true);
+                }
+                return;
+            }
+            if (!pattern) {
+                showToast(t('lock_no_pattern'), 'error');
+                openPatternSetup();
+                return;
+            }
+            lockApp();
+        }
+
+        function clearPattern() {
+            if (!confirm('Hapus pola kunci?')) return;
+            localStorage.removeItem(LOCK_KEYS.pattern);
+            localStorage.setItem(LOCK_KEYS.enabled, 'false');
+            syncLockToggleFromStorage();
+            closeLockOverlay(true);
+            showToast('Pola dihapus', 'info');
+        }
+
+        function openPatternSetup() {
+            // Keep settings open, overlay is above.
+            document.body.classList.remove('locked');
+            openLockOverlay('setup', false);
+        }
+
+        function openLockOverlay(mode, locked = false) {
+            lockMode = mode;
+            pendingPattern = null;
+            resetPatternInput();
+
+            const overlay = document.getElementById('lock-overlay');
+            overlay.classList.remove('hidden');
+
+            if (locked) {
+                document.body.classList.add('locked');
+            }
+
+            // close button behavior: do not allow dismiss in locked-unlock mode
+            const closeBtn = document.getElementById('lock-close-btn');
+            if (closeBtn) {
+                closeBtn.style.display = (locked && mode === 'unlock') ? 'none' : 'inline-flex';
+            }
+
+            syncLockOverlayTexts();
+        }
+
+        function closeLockOverlay(force = false) {
+            const overlay = document.getElementById('lock-overlay');
+            const locked = document.body.classList.contains('locked');
+
+            // If locked and not forced, do not close
+            if (locked && !force) return;
+
+            overlay.classList.add('hidden');
+            resetPatternInput();
+
+            if (locked && force) {
+                // Only unlock if forced close is called after successful unlock.
+                document.body.classList.remove('locked');
+            }
+        }
+
+        function cancelPatternSetup() {
+            // If user cancels setup and there is no pattern, disable lock
+            const hasPattern = !!localStorage.getItem(LOCK_KEYS.pattern);
+            if (!hasPattern) {
+                localStorage.setItem(LOCK_KEYS.enabled, 'false');
+                syncLockToggleFromStorage();
+            }
+            closeLockOverlay(true);
+        }
+
+        function syncLockOverlayTexts() {
+            const titleEl = document.getElementById('lock-title');
+            const subtitleEl = document.getElementById('lock-subtitle');
+            const primaryBtn = document.getElementById('lock-primary-btn');
+            const secondaryBtn = document.getElementById('lock-secondary-btn');
+
+            if (!titleEl || !subtitleEl || !primaryBtn || !secondaryBtn) return;
+
+            if (lockMode === 'setup') {
+                titleEl.textContent = t('lock_setup_title');
+                subtitleEl.textContent = t('lock_setup_subtitle');
+                primaryBtn.textContent = t('lock_confirm');
+                secondaryBtn.textContent = t('lock_cancel');
+                secondaryBtn.classList.remove('hidden');
+            } else if (lockMode === 'confirm') {
+                titleEl.textContent = t('lock_confirm_title');
+                subtitleEl.textContent = t('lock_confirm_subtitle');
+                primaryBtn.textContent = t('lock_confirm');
+                secondaryBtn.textContent = t('lock_cancel');
+                secondaryBtn.classList.remove('hidden');
+            } else {
+                titleEl.textContent = t('lock_unlock_title');
+                subtitleEl.textContent = t('lock_unlock_subtitle');
+                primaryBtn.textContent = t('lock_unlock_btn');
+                secondaryBtn.textContent = t('lock_cancel');
+                // hide cancel when app is locked
+                secondaryBtn.classList.toggle('hidden', document.body.classList.contains('locked'));
+            }
+        }
+
+        function resetPatternInput() {
+            drawnPattern = [];
+            document.querySelectorAll('.pattern-node').forEach(n => n.classList.remove('selected'));
+            const path = document.getElementById('pattern-path');
+            if (path) path.setAttribute('d', '');
+            const status = document.getElementById('lock-status');
+            if (status) status.textContent = '';
+        }
+
+        function getPatternString(arr) {
+            return (arr || []).join('-');
+        }
+
+        function confirmPatternIfSetup() {
+            const status = document.getElementById('lock-status');
+            const patternStr = getPatternString(drawnPattern);
+
+            if (lockMode === 'setup') {
+                if (drawnPattern.length < 4) {
+                    if (status) status.textContent = t('lock_set_too_short');
+                    return;
+                }
+                pendingPattern = patternStr;
+                lockMode = 'confirm';
+                resetPatternInput();
+                syncLockOverlayTexts();
+                if (status) status.textContent = '';
+                return;
+            }
+
+            if (lockMode === 'confirm') {
+                if (drawnPattern.length < 4) {
+                    if (status) status.textContent = t('lock_set_too_short');
+                    return;
+                }
+                if (patternStr !== pendingPattern) {
+                    if (status) status.textContent = t('lock_set_mismatch');
+                    resetPatternInput();
+                    return;
+                }
+
+                // Save
+                localStorage.setItem(LOCK_KEYS.pattern, pendingPattern);
+                localStorage.setItem(LOCK_KEYS.enabled, 'true');
+                syncLockToggleFromStorage();
+                showToast(t('lock_set_success'), 'success');
+                closeLockOverlay(true);
+                return;
+            }
+
+            // unlock
+            if (lockMode === 'unlock') {
+                const saved = localStorage.getItem(LOCK_KEYS.pattern);
+                if (!saved) {
+                    // No pattern -> nothing to unlock
+                    closeLockOverlay(true);
+                    return;
+                }
+                if (patternStr === saved) {
+                    showToast('Unlocked', 'success');
+                    closeLockOverlay(true);
+                    document.body.classList.remove('locked');
+                } else {
+                    if (status) status.textContent = t('lock_unlock_failed');
+                    showToast(t('lock_unlock_failed'), 'error');
+                    resetPatternInput();
+                }
+            }
+        }
+
+        function initPatternCanvas() {
+            const area = document.getElementById('pattern-area');
+            if (!area) return;
+
+            const onPointerDown = (e) => {
+                if (e.button !== undefined && e.button !== 0) return;
+                isDrawing = true;
+                resetPatternInput();
+                area.setPointerCapture?.(e.pointerId);
+                selectNodeFromPoint(e.clientX, e.clientY);
+            };
+
+            const onPointerMove = (e) => {
+                if (!isDrawing) return;
+                selectNodeFromPoint(e.clientX, e.clientY);
+            };
+
+            const onPointerUp = (e) => {
+                if (!isDrawing) return;
+                isDrawing = false;
+                try { area.releasePointerCapture?.(e.pointerId); } catch (_) {}
+            };
+
+            area.addEventListener('pointerdown', onPointerDown);
+            area.addEventListener('pointermove', onPointerMove);
+            area.addEventListener('pointerup', onPointerUp);
+            area.addEventListener('pointercancel', onPointerUp);
+        }
+
+        function selectNodeFromPoint(x, y) {
+            const el = document.elementFromPoint(x, y);
+            const node = el?.closest?.('.pattern-node');
+            if (!node) return;
+
+            const id = node.getAttribute('data-node');
+            if (!id) return;
+
+            if (!drawnPattern.includes(id)) {
+                drawnPattern.push(id);
+                node.classList.add('selected');
+                redrawPatternPath();
+            }
+        }
+
+        function redrawPatternPath() {
+            const svgPath = document.getElementById('pattern-path');
+            const area = document.getElementById('pattern-area');
+            if (!svgPath || !area) return;
+
+            const areaRect = area.getBoundingClientRect();
+            const scaleX = 300 / areaRect.width;
+            const scaleY = 300 / areaRect.height;
+
+            const points = drawnPattern.map(id => {
+                const node = document.querySelector(`.pattern-node[data-node="${id}"]`);
+                if (!node) return null;
+                const r = node.getBoundingClientRect();
+                const cx = (r.left + r.width / 2 - areaRect.left) * scaleX;
+                const cy = (r.top + r.height / 2 - areaRect.top) * scaleY;
+                return { x: cx, y: cy };
+            }).filter(Boolean);
+
+            if (points.length === 0) {
+                svgPath.setAttribute('d', '');
+                return;
+            }
+
+            const d = points.map((p, idx) => `${idx === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ');
+            svgPath.setAttribute('d', d);
+        }
+
+        // =====================
+        // LIBRARY (Favorites + History in one page)
+        // =====================
+        let libraryTab = 'favorites';
+
+        function switchLibraryTab(tab) {
+            libraryTab = tab;
+
+            const favTab = document.getElementById('library-tab-favorites');
+            const hisTab = document.getElementById('library-tab-history');
+            const favWrap = document.getElementById('library-favorites');
+            const hisWrap = document.getElementById('library-history');
+
+            if (favTab) favTab.classList.toggle('active', tab === 'favorites');
+            if (hisTab) hisTab.classList.toggle('active', tab === 'history');
+
+            if (favWrap) favWrap.classList.toggle('hidden', tab !== 'favorites');
+            if (hisWrap) hisWrap.classList.toggle('hidden', tab !== 'history');
+
+            renderLibrary();
+        }
+
+        function toggleLibraryActions() {
+            const panel = document.getElementById('library-actions');
+            if (!panel) return;
+            panel.classList.toggle('hidden');
+        }
+
+        function getLibrarySearchTerm() {
+            return (document.getElementById('library-search')?.value || '').trim().toLowerCase();
+        }
+
+        function filterLibrary() {
+            renderLibrary();
+        }
+
+        function clearLibrarySearch() {
+            const input = document.getElementById('library-search');
+            if (input) input.value = '';
+            renderLibrary();
+        }
+
+        function refreshLibraryCounts() {
+            const favorites = JSON.parse(localStorage.getItem('shutter_favorites') || '[]');
+            const history = JSON.parse(localStorage.getItem('shutter_history') || '[]');
+            const favCount = document.getElementById('fav-count');
+            const historyCount = document.getElementById('history-count');
+            if (favCount) favCount.textContent = `(${favorites.length})`;
+            if (historyCount) historyCount.textContent = `(${history.length})`;
+        }
+
+        function renderLibrary() {
+            refreshLibraryCounts();
+
+            // Render based on active tab
+            const term = getLibrarySearchTerm();
+
+            if (libraryTab === 'favorites') {
+                const favorites = JSON.parse(localStorage.getItem('shutter_favorites') || '[]');
+                const filtered = term
+                    ? favorites.filter(f =>
+                        (f.input || '').toLowerCase().includes(term) ||
+                        (f.category || '').toLowerCase().includes(term) ||
+                        (f.title || '').toLowerCase().includes(term)
+                    )
+                    : favorites;
+
+                const list = document.getElementById('favorites-list');
+                if (!list) return;
+
+                if (filtered.length === 0) {
+                    list.innerHTML = `<div class="text-center text-gray-500 py-10">${favorites.length === 0 ? t('favorites_empty') : 'Tidak ditemukan'}</div>`;
+                    return;
+                }
+
+                list.innerHTML = '';
+                filtered.forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = "touch-card bg-white p-4 rounded-xl shadow-md border border-gray-100";
+                    card.innerHTML = `
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="flex-1 min-w-0 cursor-pointer" data-action="load" data-id="${item.id}">
+                                <span class="text-xs font-bold text-pink-500 uppercase">${item.category || ''}</span>
+                                <h4 class="font-bold text-gray-800 truncate">${item.input || item.title || ''}</h4>
+                                <p class="text-xs text-gray-400">${item.timestamp || ''}</p>
+                            </div>
+                            <div class="flex gap-2 ml-2">
+                                <button class="text-blue-500 hover:text-blue-700 text-sm px-3 py-2 bg-blue-50 rounded min-h-[44px]" data-action="load-btn" data-id="${item.id}">${t('btn_load')}</button>
+                                <button class="text-red-500 hover:text-red-700 text-sm px-3 py-2 bg-red-50 rounded min-h-[44px]" data-action="delete" data-id="${item.id}">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="text-xs text-gray-500 bg-gray-50 p-2 rounded truncate cursor-pointer" data-action="load" data-id="${item.id}">${item.ai_prompt || ''}</div>
+                    `;
+
+                    card.querySelectorAll('[data-action="load"], [data-action="load-btn"]').forEach(el => {
+                        el.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            loadFavorite(parseInt(el.dataset.id));
+                        });
+                    });
+
+                    card.querySelectorAll('[data-action="delete"]').forEach(el => {
+                        el.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            removeFavorite(parseInt(el.dataset.id));
+                            renderLibrary();
+                        });
+                    });
+
+                    list.appendChild(card);
+                });
+            } else {
+                const history = JSON.parse(localStorage.getItem('shutter_history') || '[]');
+                const filtered = term
+                    ? history.filter(h =>
+                        (h.input || '').toLowerCase().includes(term) ||
+                        (h.category || '').toLowerCase().includes(term) ||
+                        (h.data?.title || '').toLowerCase().includes(term)
+                    )
+                    : history;
+
+                const list = document.getElementById('history-list');
+                if (!list) return;
+
+                if (filtered.length === 0) {
+                    list.innerHTML = `<div class="text-center text-gray-500 py-10">${history.length === 0 ? t('history_empty') : 'Tidak ditemukan'}</div>`;
+                    return;
+                }
+
+                list.innerHTML = '';
+                filtered.forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = "touch-card bg-white p-4 rounded-xl shadow-md border border-gray-100";
+                    card.innerHTML = `
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="flex-1 min-w-0 cursor-pointer" data-action="restore" data-id="${item.id}">
+                                <span class="text-xs font-bold text-emerald-600 uppercase">${item.category || ''}</span>
+                                <h4 class="font-bold text-gray-800 truncate">${item.input || ''}</h4>
+                                <p class="text-xs text-gray-400">${item.timestamp || ''}</p>
+                            </div>
+                            <div class="flex gap-2 ml-2">
+                                <button class="text-blue-500 hover:text-blue-700 text-sm px-3 py-2 bg-blue-50 rounded min-h-[44px]" data-action="restore-btn" data-id="${item.id}">${t('btn_load')}</button>
+                                <button class="text-red-500 hover:text-red-700 text-sm px-3 py-2 bg-red-50 rounded min-h-[44px]" data-action="delete" data-id="${item.id}">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="text-xs text-gray-500 bg-gray-50 p-2 rounded truncate cursor-pointer" data-action="restore" data-id="${item.id}">${item.data?.ai_prompt || ''}</div>
+                    `;
+
+                    card.querySelectorAll('[data-action="restore"], [data-action="restore-btn"]').forEach(el => {
+                        el.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            restoreHistory(parseInt(el.dataset.id));
+                        });
+                    });
+
+                    card.querySelectorAll('[data-action="delete"]').forEach(el => {
+                        el.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            deleteHistoryItem(parseInt(el.dataset.id));
+                            renderLibrary();
+                        });
+                    });
+
+                    list.appendChild(card);
+                });
+            }
+        }
+
+        // =====================
+        // IMAGE EDITOR
+        // =====================
+        let editorInited = false;
+        let editorImage = null;
+        let editorOriginal = { w: 0, h: 0 };
+
+        function initEditorOnce() {
+            if (editorInited) return;
+            editorInited = true;
+
+            const fileInput = document.getElementById('editor-file');
+            const canvas = document.getElementById('editor-canvas');
+            const ctx = canvas.getContext('2d');
+
+            const formatSel = document.getElementById('editor-format');
+            const qualityWrap = document.getElementById('editor-jpeg-quality-wrap');
+            const qualityInput = document.getElementById('editor-jpeg-quality');
+            const qualityVal = document.getElementById('editor-quality-value');
+
+            const alphaToggle = document.getElementById('editor-white-to-alpha');
+            const alphaTrack = document.getElementById('editor-alpha-track');
+            const alphaDot = document.getElementById('editor-alpha-dot');
+            const threshold = document.getElementById('editor-threshold');
+            const thresholdVal = document.getElementById('editor-threshold-value');
+
+            const cropAR = document.getElementById('editor-crop-ar');
+            const wInput = document.getElementById('editor-width');
+            const hInput = document.getElementById('editor-height');
+            const lockAR = document.getElementById('editor-lock-ar');
+
+            const btnApply = document.getElementById('editor-apply');
+            const btnDownload = document.getElementById('editor-download');
+            const btnClear = document.getElementById('editor-clear');
+
+            // Default output should be JPG
+            $(formatSel).val('image/jpeg').trigger('change');
+
+            function setEnabled(enabled) {
+                btnApply.disabled = !enabled;
+                btnDownload.disabled = !enabled;
+            }
+
+            function updateQualityUI() {
+                const q = parseFloat(qualityInput.value);
+                qualityVal.textContent = `${Math.round(q * 100)}%`;
+            }
+
+            function syncAlphaToggleUI() {
+                const on = alphaToggle.checked;
+                alphaTrack.classList.toggle('on', on);
+                alphaDot.classList.toggle('on', on);
+            }
+
+            function parseRatio(r) {
+                if (!r || r === 'none') return null;
+                const [a, b] = r.split(':').map(Number);
+                if (!a || !b) return null;
+                return a / b;
+            }
+
+            function drawPreview(img, w = img.width, h = img.height) {
+                canvas.width = w;
+                canvas.height = h;
+                ctx.clearRect(0, 0, w, h);
+                ctx.drawImage(img, 0, 0, w, h);
+                document.getElementById('editor-info').textContent = `${w}×${h}`;
+            }
+
+            function applyWhiteToAlpha(imageData, thr) {
+                const d = imageData.data;
+                for (let i = 0; i < d.length; i += 4) {
+                    const r = d[i], g = d[i + 1], b = d[i + 2];
+                    if (r >= 255 - thr && g >= 255 - thr && b >= 255 - thr) {
+                        d[i + 3] = 0;
+                    }
+                }
+                return imageData;
+            }
+
+            function centerCropToRatio(img, ratio) {
+                // returns a canvas with cropped content
+                const srcW = img.width;
+                const srcH = img.height;
+                const srcRatio = srcW / srcH;
+
+                let cropW = srcW;
+                let cropH = srcH;
+                if (srcRatio > ratio) {
+                    // too wide
+                    cropW = Math.round(srcH * ratio);
+                    cropH = srcH;
+                } else {
+                    // too tall
+                    cropW = srcW;
+                    cropH = Math.round(srcW / ratio);
+                }
+                const sx = Math.round((srcW - cropW) / 2);
+                const sy = Math.round((srcH - cropH) / 2);
+
+                const temp = document.createElement('canvas');
+                temp.width = cropW;
+                temp.height = cropH;
+                const tctx = temp.getContext('2d');
+                tctx.drawImage(img, sx, sy, cropW, cropH, 0, 0, cropW, cropH);
+                return temp;
+            }
+
+            function getProcessedCanvas() {
+                if (!editorImage) return null;
+
+                let baseCanvas = null;
+
+                // Crop first
+                const r = parseRatio(cropAR.value);
+                if (r) {
+                    baseCanvas = centerCropToRatio(editorImage, r);
+                } else {
+                    baseCanvas = document.createElement('canvas');
+                    baseCanvas.width = editorImage.width;
+                    baseCanvas.height = editorImage.height;
+                    baseCanvas.getContext('2d').drawImage(editorImage, 0, 0);
+                }
+
+                // Resize
+                const targetW = parseInt(wInput.value || baseCanvas.width);
+                const targetH = parseInt(hInput.value || baseCanvas.height);
+                const resized = document.createElement('canvas');
+                resized.width = targetW;
+                resized.height = targetH;
+                const rctx = resized.getContext('2d');
+                rctx.imageSmoothingEnabled = true;
+                rctx.imageSmoothingQuality = 'high';
+                rctx.drawImage(baseCanvas, 0, 0, targetW, targetH);
+
+                // White -> alpha ONLY if output PNG and toggle enabled
+                const outFmt = formatSel.value;
+                if (outFmt === 'image/png' && alphaToggle.checked) {
+                    const imgData = rctx.getImageData(0, 0, targetW, targetH);
+                    const thr = parseInt(threshold.value || '0');
+                    rctx.putImageData(applyWhiteToAlpha(imgData, thr), 0, 0);
+                }
+
+                return resized;
+            }
+
+            function syncTransparencyVisibility() {
+                const outFmt = formatSel.value;
+                const transPanel = document.getElementById('editor-transparency-panel');
+                if (transPanel) transPanel.classList.toggle('hidden', outFmt !== 'image/png');
+
+                if (qualityWrap) qualityWrap.classList.toggle('hidden', outFmt !== 'image/jpeg');
+            }
+
+            // Update UI based on format selection
+            formatSel.addEventListener('change', () => {
+                syncTransparencyVisibility();
+            });
+
+            qualityInput.addEventListener('input', updateQualityUI);
+            threshold.addEventListener('input', () => thresholdVal.textContent = threshold.value);
+
+            alphaToggle.addEventListener('change', () => {
+                syncAlphaToggleUI();
+            });
+
+            // Keep resize ratio if locked
+            function syncResizeByLock(changed) {
+                if (!lockAR.checked) return;
+                const curW = parseInt(wInput.value || '0');
+                const curH = parseInt(hInput.value || '0');
+                if (!curW || !curH) return;
+
+                const ratio = curW / curH;
+                if (changed === 'w') {
+                    hInput.value = Math.max(1, Math.round(curW / ratio));
+                } else {
+                    wInput.value = Math.max(1, Math.round(curH * ratio));
+                }
+            }
+
+            wInput.addEventListener('input', () => syncResizeByLock('w'));
+            hInput.addEventListener('input', () => syncResizeByLock('h'));
+
+            // File load
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+
+                const url = URL.createObjectURL(file);
+                const img = new Image();
+                img.onload = () => {
+                    editorImage = img;
+                    editorOriginal = { w: img.width, h: img.height };
+                    wInput.value = img.width;
+                    hInput.value = img.height;
+                    drawPreview(img);
+                    setEnabled(true);
+                    URL.revokeObjectURL(url);
+                };
+                img.onerror = () => {
+                    showToast('Gagal memuat gambar', 'error');
+                    URL.revokeObjectURL(url);
+                };
+                img.src = url;
+            });
+
+            btnApply.addEventListener('click', () => {
+                const processed = getProcessedCanvas();
+                if (!processed) return;
+
+                // Update preview canvas
+                canvas.width = processed.width;
+                canvas.height = processed.height;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(processed, 0, 0);
+                document.getElementById('editor-info').textContent = `${processed.width}×${processed.height}`;
+
+                showToast('Applied', 'success');
+            });
+
+            btnDownload.addEventListener('click', () => {
+                const processed = getProcessedCanvas();
+                if (!processed) return;
+
+                const outFmt = formatSel.value;
+                const q = parseFloat(qualityInput.value);
+
+                processed.toBlob((blob) => {
+                    if (!blob) return;
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    const ext = outFmt === 'image/png' ? 'png' : 'jpg';
+                    a.href = url;
+                    a.download = `edited-${Date.now()}.${ext}`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                }, outFmt, outFmt === 'image/jpeg' ? q : undefined);
+            });
+
+            btnClear.addEventListener('click', () => {
+                editorImage = null;
+                editorOriginal = { w: 0, h: 0 };
+                fileInput.value = '';
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                canvas.width = 0;
+                canvas.height = 0;
+                wInput.value = '';
+                hInput.value = '';
+                setEnabled(false);
+                document.getElementById('editor-info').textContent = '';
+            });
+
+            // initial
+            updateQualityUI();
+            thresholdVal.textContent = threshold.value;
+            syncAlphaToggleUI();
+            setEnabled(false);
+            syncTransparencyVisibility();
+        }
+
+        function editorResetSize() {
+            const wInput = document.getElementById('editor-width');
+            const hInput = document.getElementById('editor-height');
+            if (!wInput || !hInput) return;
+            if (editorOriginal.w && editorOriginal.h) {
+                wInput.value = editorOriginal.w;
+                hInput.value = editorOriginal.h;
+            }
+        }
+
+        // =====================
+        // THEME
+        // =====================
+        const THEME_PRESETS = {
+            // Default (close to Shutterstock red vibe)
+            red: { rgb: '239 68 68', c600: '#dc2626', c700: '#b91c1c', c200: '#fecaca', c100: '#fee2e2', gradTo: '#f97316' },
+
+            // Shutterstock-ish: strong red + warm orange highlight
+            shutterstock: { rgb: '230 0 35', c600: '#cc0020', c700: '#a8001a', c200: '#ffb3c1', c100: '#ffe5ea', gradTo: '#ff6a00' },
+
+            emerald: { rgb: '16 185 129', c600: '#059669', c700: '#047857', c200: '#a7f3d0', c100: '#d1fae5', gradTo: '#14b8a6' },
+            blue: { rgb: '59 130 246', c600: '#2563eb', c700: '#1d4ed8', c200: '#bfdbfe', c100: '#dbeafe', gradTo: '#06b6d4' },
+            purple: { rgb: '139 92 246', c600: '#7c3aed', c700: '#6d28d9', c200: '#ddd6fe', c100: '#ede9fe', gradTo: '#ec4899' },
+            orange: { rgb: '249 115 22', c600: '#ea580c', c700: '#c2410c', c200: '#fed7aa', c100: '#ffedd5', gradTo: '#f59e0b' },
+            slate: { rgb: '100 116 139', c600: '#475569', c700: '#334155', c200: '#cbd5e1', c100: '#e2e8f0', gradTo: '#64748b' },
+
+            // Extra presets
+            rose: { rgb: '244 63 94', c600: '#e11d48', c700: '#be123c', c200: '#fecdd3', c100: '#ffe4e6', gradTo: '#fb7185' },
+            cyan: { rgb: '6 182 212', c600: '#0891b2', c700: '#0e7490', c200: '#a5f3fc', c100: '#cffafe', gradTo: '#3b82f6' },
+            lime: { rgb: '132 204 22', c600: '#65a30d', c700: '#4d7c0f', c200: '#d9f99d', c100: '#ecfccb', gradTo: '#22c55e' },
+            amber: { rgb: '245 158 11', c600: '#d97706', c700: '#b45309', c200: '#fde68a', c100: '#fef3c7', gradTo: '#f97316' },
+            indigo: { rgb: '99 102 241', c600: '#4f46e5', c700: '#4338ca', c200: '#c7d2fe', c100: '#e0e7ff', gradTo: '#06b6d4' },
+            teal: { rgb: '20 184 166', c600: '#0d9488', c700: '#0f766e', c200: '#99f6e4', c100: '#ccfbf1', gradTo: '#3b82f6' },
+            sky: { rgb: '14 165 233', c600: '#0284c7', c700: '#0369a1', c200: '#bae6fd', c100: '#e0f2fe', gradTo: '#6366f1' },
+            fuchsia: { rgb: '217 70 239', c600: '#c026d3', c700: '#a21caf', c200: '#f5d0fe', c100: '#fae8ff', gradTo: '#ec4899' }
+        };
+
+        function applyThemePreset(presetKey) {
+            const p = THEME_PRESETS[presetKey] || THEME_PRESETS.red;
+            const root = document.documentElement;
+            root.style.setProperty('--brand-rgb', p.rgb);
+            root.style.setProperty('--brand-600', p.c600);
+            root.style.setProperty('--brand-700', p.c700);
+            root.style.setProperty('--brand-200', p.c200);
+            root.style.setProperty('--brand-100', p.c100);
+            root.style.setProperty('--brand-grad-to', p.gradTo);
+        }
+
+        function loadTheme() {
+            const preset = localStorage.getItem('shutter_theme') || 'shutterstock';
+            applyThemePreset(preset);
+            const sel = document.getElementById('theme-preset');
+            if (sel) $(sel).val(preset).trigger('change.select2');
+        }
+
+        // =====================
+        // PATCH settings save/load to include theme
+        // =====================
+        const _origLoadSettings = loadSettings;
+        loadSettings = function() {
+            _origLoadSettings();
+            const theme = localStorage.getItem('shutter_theme') || 'shutterstock';
+            $('#theme-preset').val(theme).trigger('change');
+        };
+
+        const _origSaveSettings = saveSettings;
+        saveSettings = function() {
+            const theme = document.getElementById('theme-preset')?.value || 'shutterstock';
+            localStorage.setItem('shutter_theme', theme);
+            applyThemePreset(theme);
+            _origSaveSettings();
+        };
+
+        // Ensure theme applied on boot
+        const _origDomReady = document.addEventListener;
+        // (no-op placeholder; theme is loaded in DOMContentLoaded below)
+
+        // =====================
+        // PWA
+        // =====================
+        async function registerServiceWorker() {
+            if (!('serviceWorker' in navigator)) return;
+            try {
+                await navigator.serviceWorker.register('./sw.js', { scope: './' });
+            } catch (e) {
+                // silent
+            }
+        }
+
+        function syncMetaThemeColor() {
+            const meta = document.getElementById('meta-theme-color');
+            if (!meta) return;
+            // Use the active theme main color (brand rgb)
+            const rgb = getComputedStyle(document.documentElement).getPropertyValue('--brand-rgb').trim();
+            if (!rgb) return;
+            meta.setAttribute('content', `rgb(${rgb.replace(/\s+/g, ', ')})`);
+        }
+
+        // Register PWA SW on load
+        document.addEventListener('DOMContentLoaded', () => {
+            registerServiceWorker();
+            syncMetaThemeColor();
+        });
+
+        // Patch theme applier so meta theme-color follows
+        const _origApplyThemePreset = applyThemePreset;
+        applyThemePreset = function(presetKey) {
+            _origApplyThemePreset(presetKey);
+            syncMetaThemeColor();
+        };
+
+        // =====================
+        // FINISH / FIXES
+        // =====================
+        // (intentionally left blank)
+    </script>
+</body>
+</html>
