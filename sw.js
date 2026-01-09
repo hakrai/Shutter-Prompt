@@ -1,5 +1,5 @@
 /* ShutterPrompt Service Worker - basic offline cache */
-const CACHE_NAME = 'shutterprompt-cache-v3';
+const CACHE_NAME = 'shutterprompt-cache-v4';
 
 // Keep this list local-only. Some hosts may not serve every file (404) or may redirect.
 // We use a tolerant pre-cache so install never fails.
@@ -64,11 +64,14 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(req)
         .then((res) => {
-          const copy = res.clone();
+          // IMPORTANT: each cache.put consumes the body of its Response.
+          // Create dedicated clones for each put.
+          const copyIndex = res.clone();
+          const copyRoot = res.clone();
           caches.open(CACHE_NAME).then((c) => {
             // Cache index under stable keys to cover querystring start_url
-            c.put('./index.html', copy);
-            c.put('./', copy.clone());
+            c.put('./index.html', copyIndex);
+            c.put('./', copyRoot);
           });
           return res;
         })
